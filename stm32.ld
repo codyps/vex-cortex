@@ -1,11 +1,3 @@
-/*
-Linker script for STM32F10x
-Copyright RAISONANCE 2007 (modified by Lanchon 1-Feb-2008)
-You can use, copy and distribute this file freely, but without any waranty.
-Configure memory sizes, end of stack and boot mode for your project here.
-*/
-
-
 /* include the common STM32F10x sub-script */
 INCLUDE "STM32_COMMON.ld"
 

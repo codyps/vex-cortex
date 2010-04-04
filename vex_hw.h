@@ -49,10 +49,17 @@ struct state_pack {
 	u8 reserved:4;
 };
 
-/* SPI details:
+/* SPI (uses SPI1)
+*Initialization Process:
+PE0 set high ("SPI1_INT")
+read 8 bytes of junk data.
+wait for PE3 && PE4 to be low.
+
+
+
+*Tranfers
 Transfers are triggered every 20ms.
 32 bytes are transmitted for every transfer.
-SPI1 used.
 PA11 set high, called "RTS". ("RTS high Used to ensure 1st 4 bytes").
 For each byte:
 	PE1 set low; appears to be slave select. ("Use as SSL0")
