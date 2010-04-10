@@ -83,12 +83,15 @@ static void rcc_setup(void)
 	FLASH->ACR |= FLASH_ACR_LATENCY_2;    
 
 	/* HCLK = SYSCLK */
+	RCC->CFGR &= ~RCC_CFGR_HPRE
 	RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
 
 	/* PCLK2 = HCLK */
+	RCC->CFGR &= ~RCC_CFGR_PPRE2
 	RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;
 
 	/* PCLK1 = HCLK/2 */
+	RCC->CFGR &= ~RCC_CFGR_PPRE1;
 	RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
 
 	/* PLL Config */
@@ -122,6 +125,7 @@ static void rcc_setup(void)
 
 }
 
+#if 0
 static void rcc_setup(void) {
 	// Assumptions on entry:
 	//  running on HSI, PLL disabled.
@@ -174,13 +178,14 @@ static void rcc_setup(void) {
 	while(!(RCC->CR & RCC_CR_PLLRDY));
 
 	// Select PLL as system clock source
-	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
 	RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW)
 		| RCC_CFGR_SW_PLL;
 	
 	// Wait untill PLL is used as system clock source
-	while(!(RCC->CFGR & RCC_CFGR_SWS_PLL));
+	while((RCC->CFGR & RCC_CFGR_SWS)
+		!= RCC_CFGR_SWS_PLL);
 }
+#endif
 
 //
 void rcc_init(void) {
