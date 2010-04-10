@@ -1,3 +1,5 @@
+#define USE_STDPERIPH_DRIVER
+
 #include "stm32f10x.h"
 
 #if defined(USE_STDPERIPH_DRIVER)
@@ -8,6 +10,9 @@
 #include "stm32f10x_spi.h"
 #endif
 
+
+#include "rcc.h"
+
 /*
   #define  USARTx                     USART1
   #define  GPIOx                      GPIOA
@@ -15,7 +20,7 @@
   #define  GPIO_RxPin                 GPIO_Pin_10
   #define  GPIO_TxPin                 GPIO_Pin_9
 */
-void init_usart1(void) {
+void usart1_init(void) {
 	USART_InitTypeDef USART_InitStructure;
 
 	USART_InitStructure.USART_BaudRate = 115200;     // 115200
@@ -33,15 +38,15 @@ void init_usart1(void) {
 	USART_Cmd(USART1, ENABLE);
 }
 
-void init_adc(void) {
+void adc_init(void) {
 	// ADCCLK(max 14Mhz)
 	// XXX: IFI overclocked the ADC to 18MHz.
 	//  PCLK2 /6 = 12 + 2/3 MHz
-    RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_ADCPRE)
-		| RCC_CFG_ADCPRE_DIV6;
+	//RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_ADCPRE)
+	//	| RCC_CFG_ADCPRE_DIV6;
 }
 
-void init_gpio(void) {
+void gpio_init(void) {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	
 	//TODO: enable gpio clock.
@@ -67,7 +72,7 @@ void main(void)
 #ifdef DEBUG
 	debug();
 #endif
-	init_rcc();
+	rcc_init();
 
 	for(;;) {
 	}
