@@ -3,7 +3,6 @@
  */
 
 #include <stm32f10x.h>
-#include <stm32f10x_rcc.h>
 
 static void rcc_reset(void)
 {
@@ -83,11 +82,11 @@ static void rcc_setup(void)
 	FLASH->ACR |= FLASH_ACR_LATENCY_2;    
 
 	/* HCLK = SYSCLK */
-	RCC->CFGR &= ~RCC_CFGR_HPRE
+	RCC->CFGR &= ~RCC_CFGR_HPRE;
 	RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
 
 	/* PCLK2 = HCLK */
-	RCC->CFGR &= ~RCC_CFGR_PPRE2
+	RCC->CFGR &= ~RCC_CFGR_PPRE2;
 	RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;
 
 	/* PCLK1 = HCLK/2 */
