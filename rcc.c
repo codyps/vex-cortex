@@ -75,77 +75,51 @@ static void rcc_setup(void)
 			 && (i != HSEStartUp_TimeOut));
 	}
 		
-	if ((RCC->CR & RCC_CR_HSERDY) != RESET) {
-		/* Enable Prefetch Buffer */
-		FLASH->ACR |= FLASH_ACR_PRFTBE;
+	/* Enable Prefetch Buffer */
+	FLASH->ACR |= FLASH_ACR_PRFTBE;
 
-		/* Flash 2 wait state */
-		FLASH->ACR &= ~FLASH_ACR_LATENCY;
-		FLASH->ACR |= FLASH_ACR_LATENCY_2;    
+	/* Flash 2 wait state */
+	FLASH->ACR &= ~FLASH_ACR_LATENCY;
+	FLASH->ACR |= FLASH_ACR_LATENCY_2;    
 
-		/* HCLK = SYSCLK */
-		RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
-		  
-		/* PCLK2 = HCLK */
-		RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;
+	/* HCLK = SYSCLK */
+	RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
 
-		/* PCLK1 = HCLK/2 */
-		RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
+	/* PCLK2 = HCLK */
+	RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;
 
-#if defined(STM32F10X_CL)
-		/** Configure PLLs **/
-		/* PLL2 configuration: PLL2CLK = (HSE / 5) * 8 = 40 MHz */
-		/* PREDIV1 configuration: PREDIV1CLK = PLL2 / 5 = 8 MHz */
-			
-		RCC->CFGR2 &= ~(RCC_CFGR2_PREDIV2
-			| RCC_CFGR2_PLL2MUL
-			| RCC_CFGR2_PREDIV1
-			| RCC_CFGR2_PREDIV1SRC);
-		RCC->CFGR2 |= RCC_CFGR2_PREDIV2_DIV5
-			| RCC_CFGR2_PLL2MUL8
-			| RCC_CFGR2_PREDIV1SRC_PLL2
-			| RCC_CFGR2_PREDIV1_DIV5;
+	/* PCLK1 = HCLK/2 */
+	RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
 
-		/* Enable PLL2 */
-		RCC->CR |= RCC_CR_PLL2ON;
-		/* Wait till PLL2 is ready */
-		while(!(RCC->CR & RCC_CR_PLL2RDY));
+	/* PLL Config */
+	RCC->CFGR &= ~(RCC_CFGR_PLLSRC 
+		| RCC_CFGR_PLLXTPRE
+		| RCC_CFGR_PLLMULL);
 
-		/* PLL configuration: PLLCLK = PREDIV1 * 9 = 72 MHz */ 
-		RCC->CFGR &= ~(RCC_CFGR_PLLXTPRE 
-			| RCC_CFGR_PLLSRC
-			| RCC_CFGR_PLLMULL);
-		RCC->CFGR |= RCC_CFGR_PLLXTPRE_PREDIV1
-			| RCC_CFGR_PLLSRC_PREDIV1
-			| RCC_CFGR_PLLMULL9; 
-#else    
-		/*  PLL configuration: PLLCLK = HSE * 9 = 72 MHz */
-		RCC->CFGR &= ~(RCC_CFGR_PLLSRC 
-			| RCC_CFGR_PLLXTPRE
-			| RCC_CFGR_PLLMULL);
+	if (RCC->CR & RCC_CR_HSERDY) {
+		/* PLLCLK = HSE * 9 = 72 MHz */
 		RCC->CFGR |= RCC_CFGR_PLLSRC_HSE
 			| RCC_CFGR_PLLMULL9;
-#endif /* STM32F10X_CL */
-
-		/* Enable PLL */
-		RCC->CR |= RCC_CR_PLLON;
-
-		/* Wait till PLL is ready */
-		while(!(RCC->CR & RCC_CR_PLLRDY));
-
-		/* Select PLL as system clock source */
-		RCC->CFGR &= ~(RCC_CFGR_SW);
-		RCC->CFGR |= RCC_CFGR_SW_PLL;    
-
-		/* Wait till PLL is used as system clock source */
-		while ((RCC->CFGR & RCC_CFGR_SWS)
-			!= (uint32_t)0x08);
-		
-	} else { 
-		/* If HSE fails to start-up, the application will 
-			have wrong clock configuration. User can add
-			here some code to deal with this error */
+	} else {
+		/* PLLCLK = HSI / 2 * 16 = 64 MHz */
+		RCC->CFGR |= RCC_CFGR_PLLSRC_HSI_Div2
+			| RCC_CFGR_PLLMULL16;
 	}
+		
+	/* Enable PLL */
+	RCC->CR |= RCC_CR_PLLON;
+
+	/* Wait till PLL is ready */
+	while(!(RCC->CR & RCC_CR_PLLRDY));
+
+	/* Select PLL as system clock source */
+	RCC->CFGR &= ~(RCC_CFGR_SW);
+	RCC->CFGR |= RCC_CFGR_SW_PLL;    
+
+	/* Wait till PLL is used as system clock source */
+	while ((RCC->CFGR & RCC_CFGR_SWS)
+		!= RCC_CFGR_SWS_PLL);
+
 }
 
 static void rcc_setup(void) {
@@ -183,14 +157,16 @@ static void rcc_setup(void) {
 		| RCC_CFG_PPRE1_DIV2;
 		
 	// PLLCLK = 8MHz * 9 = 72 MHz
-	// FIXME: not sure this is all the bits that need
-	//		mucking.
-	RCC->CFGR |= RCC_CFGR_PLLSRC;
 	RCC->CFGR2 = (RCC->CFGR2 & ~RCC_CFGR2_PREDIV1)
 		| RCC_CFGR2_PREDIV1_DIV1;
-	RCC->CFGR  = (RCC->CFGR & ~RCC_CFGR_PLLMULL)
-		| RCC_CFGR_PLLMULL9;
     
+	RCC->CFGR &= ~(RCC_CFGR_PLLSRC 
+		| RCC_CFGR_PLLXTPRE
+		| RCC_CFGR_PLLMULL);
+	RCC->CFGR |= RCC_CFGR_PLLSRC_HSE
+		| RCC_CFGR_PLLMULL9;
+
+
 	// Enable PLL 
 	RCC->CR |= RCC_CR_PLLON;
 
@@ -204,55 +180,6 @@ static void rcc_setup(void) {
 	
 	// Wait untill PLL is used as system clock source
 	while(!(RCC->CFGR & RCC_CFGR_SWS_PLL));
-}
-
-static void rcc_setup(void) 
-{
-	/* RCC system reset(for debug purpose) */
-	RCC_DeInit();
-
-	/* Enable Prefetch Buffer */
-	FLASH_PrefetchBufferCmd(FLASH_PrefetchBuffer_Enable);
-
-	/* Flash 2 wait state */
-	FLASH_SetLatency(FLASH_Latency_2);
-	
-	/* Enable HSE */
-	RCC_HSEConfig(RCC_HSE_ON);
-
-	/* Wait till HSE is ready */
-	HSEStartUpStatus = RCC_WaitForHSEStartUp();
-	
-	/* HCLK = SYSCLK */
-	RCC_HCLKConfig(RCC_SYSCLK_Div1); 
-
-	/* PCLK2 = HCLK */
-	RCC_PCLK2Config(RCC_HCLK_Div1); 
-
-	/* PCLK1 = HCLK/2 */
-	RCC_PCLK1Config(RCC_HCLK_Div2);
-
-	if(HSEStartUpStatus == SUCCESS) {
-		/* PLLCLK = 8MHz * 9 = 72 MHz */
-		RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9);	
-	} else {
-		// Apparently the HSE failed.
-		// Lets attempt to use the HSI
-		/* PLLCLK = 8MHz / 2 * 9 = 36 MHz */
-		RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_9);
-	}
-	
-	/* Enable PLL */ 
-	RCC_PLLCmd(ENABLE);
-
-	/* Wait till PLL is ready */
-	while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
-
-	/* Select PLL as system clock source */
-	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
-
-	/* Wait till PLL is used as system clock source */
-	while(RCC_GetSYSCLKSource() != 0x08);
 }
 
 //
