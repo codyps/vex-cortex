@@ -1,5 +1,6 @@
 /* Documetaion of the VEX interfaces */
 
+#define __packed __attribute__((packed))
 struct oi_data {
 	// right stick
 	u8 axis_1;
@@ -22,10 +23,10 @@ struct oi_data {
 		bit2 = Right Down      *** Group 6
 		bit3 = Left Down
 	*/
-	u8 group_5a:1;
-	u8 group_5b:1;
-	u8 group_6a:1;
-	u8 group_6b:1;
+	u8 g5_u:1;
+	u8 g5_d:1;
+	u8 g6_u:1;
+	u8 g6_d:1;
 	u8 reserved1:4; // not mentioned.
 	
 	u8 g8_down:1;
@@ -39,7 +40,7 @@ struct oi_data {
 	u8 g7_right:1;
 	
 	u8 reserved2[3]; // noted as "spare"
-};
+} __packed;
 
 struct state_pack {
 	u8 iack:1;
@@ -47,7 +48,7 @@ struct state_pack {
 	u8 initializing:1; // data is not ready.
 	u8 valid:1; // data is valid
 	u8 reserved:4;
-};
+} __packed;
 
 /* SPI (uses SPI1)
 *Initialization Process:
@@ -95,7 +96,7 @@ typedef struct {
 			u8 joystick_mode:1; //XXX: wtf is joystick mode?
 			u8 autonomus:1;
 			u8 disable:1;
-		} b;
+		} __packed b;
 	} SystemFlags;
 	u8  mainBatteryVoltage; // mult by 0.0591 for something readable.      
 	u8  backupBatteryVoltage;
@@ -124,7 +125,7 @@ typedef struct {
 			u8 enable_printfs:1; //XXX: noted as "Reserved for Master"
 			u8 enable_display:1; //XXX: noted as "Reserved for Master"
 			u8 reserved:2; // unmentioned.
-		} b;
+		} __packed b;
 	} SystemFlags; //XXX: "Reserved for Slave (TBD)"
 	u8  DigitalByte1;   //Digital bits 1-8      
 	u8  DigitalByte2;   //Digital bits 9-12, 13-16 (spare)   
@@ -133,7 +134,7 @@ typedef struct {
 	u8  Analog[8];      //Analog port (1-8)
 	u8  version;    
 	u8  packetNum;    
-} slave_spi_packet;
+} __packed slave_spi_packet;
 
 /* Crystal Detection
 PB10: low when RX1 is connected.
