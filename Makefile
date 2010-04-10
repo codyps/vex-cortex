@@ -1,7 +1,7 @@
 TARGET=main
 SOURCE=main.c     \
        rcc.c      \
-       $(STM_LIBC)
+       $(STM_LIB_SRC)
 
 #srcdir=.
 #VPATH=$(srcdir)/lib/fwlib/src $(srcdir)
@@ -18,15 +18,22 @@ AS=$(GCC_PREFIX)gcc
 LD=$(GCC_PREFIX)gcc
 OBJCOPY=$(GCC_PREFIX)objcopy
 
-INCLUDES=-I. -I./lib/fwlib/inc -I./lib
-LD_INC=-L./lib -L./ld
+.SUFFIXES:
+
+
+INCLUDES=-I$(srcdir) -I$(srcdir)/lib/fwlib/inc -I$(srcdir)/lib
+LD_INC=-L$(srcdir)/lib -L$(srcdir)/ld
+
+# When changing boards, modify STMPROC, HSE_VALUE, and the
+#  startup asm code.
 
 STMPROC=STM32F10X_HD
-HSE_VALUE=((uint32_t)8000000)
-STM_LIBC= ./lib/fwlib/src/stm32f10x_gpio.c\
-          ./lib/fwlib/src/stm32f10x_usart.c
+HSE_VALUE=8000000
+STM_LIB_SRC= $(srcdir)/lib/startup/gcc_ride7/startup_stm32f10x_hd.s \
+             $(srcdir)/lib/fwlib/src/stm32f10x_gpio.c               \
+             $(srcdir)/lib/fwlib/src/stm32f10x_usart.c
 
-ALL_CFLAGS=-MD -D$(STMPROC) -DHSE_VALUE="$(HSE_VALUE)" \
+ALL_CFLAGS=-MD -D$(STMPROC) -DHSE_VALUE=$(HSE_VALUE) \
            -mthumb -mcpu=cortex-m3 -Wall -g\
 	   -Wno-main \
             $(INCLUDES) $(CFLAGS)
@@ -34,10 +41,15 @@ ALL_LDFLAGS=$(ALL_CFLAGS)\
             -Wl,--gc-sections,-Map=$@.map,-cref,-u,Reset_Handler \
             $(LD_INC) -T STM32F103VD.ld
 
+ALL_ASFLAGS=$(ALL_CFLAGS)
+
 
 .SECONDARY:
 
 all: $(TARGET).hex $(TARGET).bin
+
+%.s.o: %.s $(HEADER)
+	$(AS) $(ALL_ASFLAGS) -c -o $@ $<
 
 %.c.o: %.c $(HEADER)
 	$(CC) $(ALL_CFLAGS) -c -o $@ $<
