@@ -21,18 +21,25 @@ static void rcc_reset(void)
 #endif /* STM32F10X_CL */   
 
 	/* Reset HSEON, CSSON and PLLON bits */
-	RCC->CR &= (uint32_t)0xFEF6FFFF;
+	RCC->CR &= ~(RCC_CR_HSEON 
+		| RCC_CR_CSSON 
+		| RCC_CR_PLLON);
 
 	/* Reset HSEBYP bit */
-	RCC->CR &= (uint32_t)0xFFFBFFFF;
+	RCC->CR &= ~(RCC_CR_HSEBYP);
 
 	/* Reset PLLSRC, PLLXTPRE, PLLMUL and USBPRE/OTGFSPRE bits */
 	RCC->CFGR &= (uint32_t)0xFF80FFFF;
+	/*
+	RCC->CFGR &= ~(RCC_CFGR_PLLSRC
+		| RCC_CFGR_PLLXTPRE
+		| RCC_CFGR_PLLMUL);
+	*/
 
 #ifdef STM32F10X_CL
 	/* Reset PLL2ON and PLL3ON bits */
-	RCC->CR &= (uint32_t)0xEBFFFFFF;
-
+	RCC->CR &= ~(RCC_CR_PLL2ON
+		| RCC_CR_PLL3ON);
 	/* Disable all interrupts and clear pending bits  */
 	RCC->CIR = 0x00FF0000;
 
