@@ -11,15 +11,19 @@ AS=$(GCC_PREFIX)gcc
 LD=$(GCC_PREFIX)gcc
 OBJCOPY=$(GCC_PREFIX)objcopy
 
-INCLUDES=-I. -I./fwlib-3.2.0/inc
-LD_INC=-L./lib
+INCLUDES=-I. -I./lib/fwlib/inc -I./lib
+LD_INC=-L./lib -L./ld
 
-ALL_CFLAGS=-MD -D_STM32F103VDH6_ -D_STM3x_ -D_STM32x_ \
+STMPROC=STM32F10X_HD
+HSE_VALUE=((uint32_t)8000000)
+
+
+ALL_CFLAGS=-MD -D$(STMPROC) -DHSE_VALUE="$(HSE_VALUE)" \
            -mthumb -mcpu=cortex-m3 -Wall -g \
 		   $(INCLUDES) $(CFLAGS)
 ALL_LDFLAGS=$(ALL_CFLAGS)\
             -Wl,--gc-sections,-Map=$@.map,-cref,-u,Reset_Handler \
-			$(LD_INC) -T stm32.ld
+            $(LD_INC) -T STM32F103VD.ld
 
 all: $(TARGET).hex $(TARGET).bin
 
