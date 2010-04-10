@@ -1,3 +1,9 @@
+Build Environment for the vex cortex
+Based upon StdPeriphLib 3.2.0 from ST and the project noted below.
+
+
+
+-----
 CodeSourcery/STM32 (Lanchon 1-Feb-2008)
 minor modification by Martin Thomas 10-Feb-2008 - see below
 
