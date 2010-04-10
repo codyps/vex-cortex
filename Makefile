@@ -48,5 +48,5 @@ all: $(TARGET).hex $(TARGET).bin
 	$(OBJCOPY) -S -O bin $< $@
 	
 clean:
-	$(FIND) . -regex '.*\.\([od]\|elf\|hex\|bin\)' -printf 'RM %P\n' -delete
+	@$(FIND) . -regex '.*\.\([od]\|elf\|hex\|bin\)' -printf 'RM %P\n' -delete
 
