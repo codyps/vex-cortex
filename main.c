@@ -4,7 +4,6 @@
 
 #if defined(USE_STDPERIPH_DRIVER)
 #include "stm32f10x_rcc.h"
-#include "stm32f10x_flash.h"
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_usart.h"
 #include "stm32f10x_spi.h"
@@ -20,7 +19,8 @@
   #define  GPIO_RxPin                 GPIO_Pin_10
   #define  GPIO_TxPin                 GPIO_Pin_9
 */
-void usart1_init(void) {
+void usart1_init(void)
+{
 	USART_InitTypeDef USART_InitStructure;
 
 	USART_InitStructure.USART_BaudRate = 115200;     // 115200
@@ -38,7 +38,8 @@ void usart1_init(void) {
 	USART_Cmd(USART1, ENABLE);
 }
 
-void adc_init(void) {
+void adc_init(void)
+{
 	// ADCCLK(max 14Mhz)
 	// XXX: IFI overclocked the ADC to 18MHz.
 	//  PCLK2 /6 = 12 + 2/3 MHz
@@ -69,16 +70,13 @@ void gpio_init(void) {
 
 __attribute__((noreturn)) void main(void)
 {
-#ifdef DEBUG
-	debug();
-#endif
 	rcc_init();
 
 	for(;;) {
 	}
 }
 
-#ifdef  DEBUG
+#ifdef  USE_FULL_ASSERT
 void assert_failed(u8* file, u32 line)
 { 
 	/* User can add his own implementation to report the file name and line number,
