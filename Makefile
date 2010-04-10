@@ -6,6 +6,7 @@ OBJ=$(SOURCE:=.o)
 GCC_PATH=
 GCC_PREFIX=$(GCC_PATH)arm-none-eabi-
 
+FIND=find
 CC=$(GCC_PREFIX)gcc
 AS=$(GCC_PREFIX)gcc
 LD=$(GCC_PREFIX)gcc
@@ -40,4 +41,4 @@ all: $(TARGET).hex $(TARGET).bin
 	$(OBJCOPY) -S -O bin $< $@
 	
 clean:
-	find -regex '.*\.\([od]\|elf\|hex\|bin\)' -execdir $(RM) {} +
+	@$(FIND) -regex '.*\.\([od]\|elf\|hex\|bin\)' -printf 'RM %P\n' -delete
