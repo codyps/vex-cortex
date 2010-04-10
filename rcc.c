@@ -3,18 +3,19 @@
  */
 
 #include <stm32f10x.h>
- 
+#include <stm32f10x_rcc.h>
+
 static void rcc_reset(void)
 {
 	/* Reset the RCC clock
-     * configuration to the 
+	 * configuration to the 
 	 * default reset state 
 	 */
 	/* Set HSION bit */
 	RCC->CR |= RCC_CR_HSION;
 
 	/* Reset SW, HPRE, PPRE1, PPRE2, ADCPRE and MCO bits */
-#ifndef STM32F10X_CL
+#if !defined(STM32F10X_CL)
 	RCC->CFGR &= (uint32_t)0xF8FF0000;
 #else
 	RCC->CFGR &= (uint32_t)0xF0FF0000;
@@ -36,7 +37,7 @@ static void rcc_reset(void)
 		| RCC_CFGR_PLLMUL);
 	*/
 
-#ifdef STM32F10X_CL
+#if defined( STM32F10X_CL)
 	/* Reset PLL2ON and PLL3ON bits */
 	RCC->CR &= ~(RCC_CR_PLL2ON
 		| RCC_CR_PLL3ON);
@@ -69,8 +70,9 @@ static void rcc_setup(void)
 		uint32_t i = 0;
 		do {
 			i++;  
-		} while((RCC->CR & RCC_CR_HSERDY) == 0) 
-			&& (i != HSEStartUp_TimeOut));
+		} while (
+			( (RCC->CR & RCC_CR_HSERDY) == 0 )
+			 && (i != HSEStartUp_TimeOut));
 	}
 		
 	if ((RCC->CR & RCC_CR_HSERDY) != RESET) {
@@ -90,7 +92,7 @@ static void rcc_setup(void)
 		/* PCLK1 = HCLK/2 */
 		RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
 
-		#ifdef STM32F10X_CL
+#if defined(STM32F10X_CL)
 		/** Configure PLLs **/
 		/* PLL2 configuration: PLL2CLK = (HSE / 5) * 8 = 40 MHz */
 		/* PREDIV1 configuration: PREDIV1CLK = PLL2 / 5 = 8 MHz */
@@ -102,7 +104,7 @@ static void rcc_setup(void)
 		RCC->CFGR2 |= RCC_CFGR2_PREDIV2_DIV5
 			| RCC_CFGR2_PLL2MUL8
 			| RCC_CFGR2_PREDIV1SRC_PLL2
-			| RCC_CFGR2_PREDIV1_DIV5);
+			| RCC_CFGR2_PREDIV1_DIV5;
 
 		/* Enable PLL2 */
 		RCC->CR |= RCC_CR_PLL2ON;
@@ -116,14 +118,14 @@ static void rcc_setup(void)
 		RCC->CFGR |= RCC_CFGR_PLLXTPRE_PREDIV1
 			| RCC_CFGR_PLLSRC_PREDIV1
 			| RCC_CFGR_PLLMULL9; 
-		#else    
+#else    
 		/*  PLL configuration: PLLCLK = HSE * 9 = 72 MHz */
 		RCC->CFGR &= ~(RCC_CFGR_PLLSRC 
 			| RCC_CFGR_PLLXTPRE
 			| RCC_CFGR_PLLMULL);
 		RCC->CFGR |= RCC_CFGR_PLLSRC_HSE
 			| RCC_CFGR_PLLMULL9;
-		#endif /* STM32F10X_CL */
+#endif /* STM32F10X_CL */
 
 		/* Enable PLL */
 		RCC->CR |= RCC_CR_PLLON;
@@ -160,12 +162,12 @@ static void rcc_setup(void) {
 	//  (note: should only be done when running off of 8Mhz HSI.)
 	FLASH->ACR |= FLASH_ACR_PRFTBE;
 	
-    // FLASH: Set latency to 2
+	// FLASH: Set latency to 2
 	FLASH->ACR |= FLASH_ACR_LATENCY_1;
 	FLASH->ACR &= ~( FLASH_ACR_LATENCY_0
 		| FLASH_ACR_LATENCY_2 );
 	
-    // HCLK: AHB (Max 72Mhz) 
+	// HCLK: AHB (Max 72Mhz) 
 	//  = SYSCLK = 72Mhz
 	// 0xxx: SYSCLK not divided
 	RCC->CFGR &= ~RCC_CFGR_HPRE_3;
@@ -173,9 +175,9 @@ static void rcc_setup(void) {
 	// PCLK2: APB2 (APB high speed, Max 72Mhz)
 	//	= HCLK = 72MHz
 	// 0xx: HCLK not divided
-    RCC->CFGR &= ~RCC_CFGR_PPRE2_2;
+	RCC->CFGR &= ~RCC_CFGR_PPRE2_2;
 	
-    // PCLK1: APB1 (APB low speed, Max 36Mhz)
+	// PCLK1: APB1 (APB low speed, Max 36Mhz)
 	//	= HCLK/2 = 36MHz
 	RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_PPRE1)
 		| RCC_CFG_PPRE1_DIV2;
@@ -189,19 +191,19 @@ static void rcc_setup(void) {
 	RCC->CFGR  = (RCC->CFGR & ~RCC_CFGR_PLLMULL)
 		| RCC_CFGR_PLLMULL9;
     
-    // Enable PLL 
-    RCC->CR |= RCC_CR_PLLON;
+	// Enable PLL 
+	RCC->CR |= RCC_CR_PLLON;
 
-    // Wait till PLL is ready (no timeout here...)
-    while(!(RCC->CR & RCC_CR_PLLRDY));
+	// Wait till PLL is ready (no timeout here...)
+	while(!(RCC->CR & RCC_CR_PLLRDY));
 
-    // Select PLL as system clock source
-    RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+	// Select PLL as system clock source
+	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
 	RCC->CFGR = (RCC->CFGR & ~RCC_CFGR_SW)
 		| RCC_CFGR_SW_PLL;
 	
-    // Wait untill PLL is used as system clock source
-    while(!(RCC->CFGR & RCC_CFGR_SWS_PLL));
+	// Wait untill PLL is used as system clock source
+	while(!(RCC->CFGR & RCC_CFGR_SWS_PLL));
 }
 
 static void rcc_setup(void) 
