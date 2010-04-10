@@ -27,11 +27,15 @@ STM_LIBC= ./lib/fwlib/src/stm32f10x_gpio.c\
           ./lib/fwlib/src/stm32f10x_usart.c
 
 ALL_CFLAGS=-MD -D$(STMPROC) -DHSE_VALUE="$(HSE_VALUE)" \
-           -mthumb -mcpu=cortex-m3 -Wall -g \
+           -mthumb -mcpu=cortex-m3 -Wall -g\
+	   -Wno-main \
             $(INCLUDES) $(CFLAGS)
 ALL_LDFLAGS=$(ALL_CFLAGS)\
             -Wl,--gc-sections,-Map=$@.map,-cref,-u,Reset_Handler \
             $(LD_INC) -T STM32F103VD.ld
+
+
+.SECONDARY:
 
 all: $(TARGET).hex $(TARGET).bin
 
@@ -48,5 +52,7 @@ all: $(TARGET).hex $(TARGET).bin
 	$(OBJCOPY) -S -O bin $< $@
 	
 clean:
-	@$(FIND) . -regex '.*\.\([od]\|elf\|hex\|bin\)' -printf 'RM %P\n' -delete
+	@$(FIND) . -regex '.*\.\([od]\|elf\|hex\|bin\|map\)'\
+		-printf 'RM %P\n' -delete
+
 

@@ -67,7 +67,7 @@ void gpio_init(void) {
 		, ENABLE);
 }
 
-void main(void)
+__attribute__((noreturn)) void main(void)
 {
 #ifdef DEBUG
 	debug();
