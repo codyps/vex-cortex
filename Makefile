@@ -41,5 +41,5 @@ all: $(TARGET).hex $(TARGET).bin
 	
 clean:
 	$(MAKE) -C lib clean
-	$(MAKE) -C fwlib-3.2.0 clean
+	$(MAKE) -C lib/fwlib clean
 	$(RM) -rf *.o *.elf *.hex *.bin
