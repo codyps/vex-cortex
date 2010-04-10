@@ -1,9 +1,13 @@
-TARGET=main
+TARGET = main
+FWLIB_DIR = $(srcdir)/lib/fwlib
+STM_LIB_SRC= $(srcdir)/lib/startup/gcc_ride7/startup_stm32f10x_hd.s \
+             $(wildcard $(FWLIB_DIR)/src/*.c)
+
 SOURCE=main.c     \
        rcc.c      \
        $(STM_LIB_SRC)
 
-#srcdir=.
+srcdir=.
 #VPATH=$(srcdir)/lib/fwlib/src $(srcdir)
 
 HEADER=$(wildcard *.h)
@@ -18,10 +22,7 @@ AS=$(GCC_PREFIX)gcc
 LD=$(GCC_PREFIX)gcc
 OBJCOPY=$(GCC_PREFIX)objcopy
 
-.SUFFIXES:
-
-
-INCLUDES=-I$(srcdir) -I$(srcdir)/lib/fwlib/inc -I$(srcdir)/lib
+CC_INC=-I$(srcdir) -I$(srcdir)/lib/fwlib/inc -I$(srcdir)/lib
 LD_INC=-L$(srcdir)/lib -L$(srcdir)/ld
 
 # When changing boards, modify STMPROC, HSE_VALUE, and the
@@ -29,24 +30,25 @@ LD_INC=-L$(srcdir)/lib -L$(srcdir)/ld
 
 STMPROC=STM32F10X_HD
 HSE_VALUE=8000000
-STM_LIB_SRC= $(srcdir)/lib/startup/gcc_ride7/startup_stm32f10x_hd.s \
-             $(srcdir)/lib/fwlib/src/stm32f10x_gpio.c               \
-             $(srcdir)/lib/fwlib/src/stm32f10x_usart.c
 
 ALL_CFLAGS=-MD -D$(STMPROC) -DHSE_VALUE=$(HSE_VALUE) \
-           -mthumb -mcpu=cortex-m3 -Wall -g\
-	   -Wno-main \
-            $(INCLUDES) $(CFLAGS)
-ALL_LDFLAGS=$(ALL_CFLAGS)\
-            -Wl,--gc-sections,-Map=$@.map,-cref,-u,Reset_Handler \
+           -mthumb -mcpu=cortex-m3 -Wall -g          \
+	       -Wno-main                                 \
+           $(CC_INC) $(CFLAGS)
+ALL_LDFLAGS=$(ALL_CFLAGS)                            \
+            -Wl,--gc-sections,-Map=$@.map,-cref      \
+			-Wl,-u,Reset_Handler                     \
             $(LD_INC) -T STM32F103VD.ld
 
 ALL_ASFLAGS=$(ALL_CFLAGS)
 
-
-.SECONDARY:
+.SUFFIXES:
 
 all: $(TARGET).hex $(TARGET).bin
+
+Makefile:;
+
+.SECONDARY:
 
 %.s.o: %.s $(HEADER)
 	$(AS) $(ALL_ASFLAGS) -c -o $@ $<
@@ -61,10 +63,10 @@ all: $(TARGET).hex $(TARGET).bin
 	$(OBJCOPY) -S -O ihex $< $@
 
 %.bin: %.elf
-	$(OBJCOPY) -S -O bin $< $@
-	
+	$(OBJCOPY) -S -O binary $< $@
+
 clean:
 	@$(FIND) . -regex '.*\.\([od]\|elf\|hex\|bin\|map\)'\
 		-printf 'RM %P\n' -delete
 
-
+.PHONY: clean all real-all
