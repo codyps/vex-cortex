@@ -40,6 +40,4 @@ all: $(TARGET).hex $(TARGET).bin
 	$(OBJCOPY) -S -O bin $< $@
 	
 clean:
-	$(MAKE) -C lib clean
-	$(MAKE) -C lib/fwlib clean
-	$(RM) -rf *.o *.elf *.hex *.bin
+	find -regex '.*\.\([od]\|elf\|hex\|bin\)' -execdir $(RM) {} +
