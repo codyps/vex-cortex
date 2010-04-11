@@ -1,4 +1,7 @@
-*.hex
-*.elf
-*.map
-*.o
+*.[oda]
+main.elf.lss
+main.elf.sym
+main.elf.map
+main.bin
+main.hex
+main.elf
