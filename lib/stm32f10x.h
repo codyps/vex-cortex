@@ -70,7 +70,10 @@
  - Connectivity line devices are STM32F105xx and STM32F107xx microcontrollers.
   */
 
-#if !defined  USE_STDPERIPH_DRIVER
+#if defined(USE_STDPERIPH_DRIVER)
+//#define assert_param(x)
+#else
+	
 /**
  * @brief Comment the line below if you will not use the peripherals drivers.
    In this case, these drivers will not be included and the application code will 
