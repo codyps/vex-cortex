@@ -1,4 +1,3 @@
-#define USE_STDPERIPH_DRIVER
 
 #include "stm32f10x.h"
 
