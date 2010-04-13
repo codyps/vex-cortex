@@ -66,7 +66,67 @@ void usart_init(void) {
 	GPIOA->CRH |= GPIO_CRH_CNF10_0;
 	
 	/* USART */
+	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 	
+/* Transmit
+1. Enable the USART by writing
+	the UE bit in USART_CR1 register to 1.
+2. Program the M bit in USART_CR1 to
+	define the word length.
+3. Program the number of stop bits 
+	in USART_CR2.
+4. Select DMA enable (DMAT) in USART_CR3
+	if Multi buffer Communication is 
+	to take place. Configure the DMA 
+	register as explained in multibuffer 
+	communication.
+5. Select the desired baud rate using 
+	the USART_BRR register.
+6. Set the TE bit in USART_CR1 to send
+	an idle frame as first transmission.
+7. Write the data to send in the USART_DR
+	register (this clears the TXE bit). 
+	Repeat this for each data to be 
+	transmitted in case of single buffer.
+8. After writing the last data into the
+	USART_DR register, wait until TC=1. 
+	This indicates that the transmission
+	of the last frame is complete. This
+	is required for instance when the
+	USART is disabled or enters the Halt 
+	mode to avoid corrupting the last 
+	transmission.
+*/
+
+/* Recieve
+1. Enable the USART by writing the UE bit in USART_CR1 register to 1.
+2. Program the M bit in USART_CR1 to define the word length.
+3. Program the number of stop bits in USART_CR2.
+4. Select DMA enable (DMAR) in USART_CR3 if multibuffer communication is to take
+place. Configure the DMA register as explained in multibuffer communication. STEP 3
+5. Select the desired baud rate using the baud rate register USART_BRR
+6. Set the RE bit USART_CR1. This enables the receiver which begins searching for a
+start bit.
+*/
+	
+	// Enable USART
+	USART1->CR1 |= USART_CR1_UE;
+	
+	// 8bit word len
+	USART1->CR1 &= ~USART_CR1_M;
+	
+	// 1 stop bit = 0b00
+	USART1->CR2 &= ~USART_CR2_STOP;
+	
+#define USART_BRR(_fclk_,_baud_)       \
+	( (uint32_t)  (                    \
+	  (uint32_t)                       \
+		_fclk_ * 0xF / ( 16 * _baud_ ) \
+	)             )
+	
+	// Baud rate, DIV = fclk / (16*baud)
+	// 115200
+	USART1->BRR = USART_BRR(_fclk_,_baud_);
 	
 	/** USART2: **/
 	/* REMAP */
@@ -77,6 +137,7 @@ void usart_init(void) {
 	/* GPIO */
 	
 	/* USART */
+	RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 	
 	/** USART3: **/
 	/* REMAP */
@@ -89,6 +150,8 @@ void usart_init(void) {
 	/* GPIO */
 	
 	/* USART */
+	RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+	
 }
 
 void gpio_init(void) {
