@@ -1,39 +1,30 @@
+#include "stm32f10x.h"
 #include "usart.h"
 
+#define USART_BRR(_fclk_,_baud_)            \
+	( (uint32_t)  (                     \
+	  (uint32_t)                        \
+		_fclk_ * 0xF /  _baud_ / 16 \
+	)             )
 
-/*
-  #define  USARTx                     USART1
-  #define  GPIOx                      GPIOA
-  #define  RCC_APB1Periph_USARTx      RCC_APB2Periph_USART1
-  #define  GPIO_RxPin                 GPIO_Pin_10
-  #define  GPIO_TxPin                 GPIO_Pin_9
-*/
-void usart1_init(void)
-{
-	USART_InitTypeDef USART_InitStructure;
-
-	USART_InitStructure.USART_BaudRate = 115200;
-	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-	USART_InitStructure.USART_StopBits = USART_StopBits_1;
-	USART_InitStructure.USART_Parity = USART_Parity_No ;
-	USART_InitStructure.USART_HardwareFlowControl =
-		USART_HardwareFlowControl_None;
-	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-	
-	//TODO: enable1 usart clock
-	
-	//TODO: configure usart1 gpios
-	
-	USART_Init(USART1, &USART_InitStructure);
-	USART_Cmd(USART1, ENABLE);
+void usart1_putchar(const char c) {
+	while(!(USART1->SR & USART_SR_TXE));
+	USART1->DR = c;
 }
 
-void usart_init(void) {
+void usart1_puts(const char *c) {
+	while( (*c) != '\0') {
+		usart1_putchar(*c);
+		c++;
+	}
+}
+
+static void usart1_init(void) {
 	/** USART1:
 	TX = PA9, RX = PA10
 	**/
 	/* GPIO: */
-	// TX = PA9 = AF push/pull =
+	// TX = PA9 = AltFunc push/pull =
 	//  mode = 11, CNF = 10.
 	GPIOA->CRH &= ~(GPIO_CRH_MODE9
 		| GPIO_CRH_CNF9);
@@ -81,14 +72,9 @@ void usart_init(void) {
 */
 
 /* Recieve
-1. Enable the USART by writing the UE bit in USART_CR1 register to 1.
-2. Program the M bit in USART_CR1 to define the word length.
-3. Program the number of stop bits in USART_CR2.
-4. Select DMA enable (DMAR) in USART_CR3 if multibuffer communication is to take
-place. Configure the DMA register as explained in multibuffer communication. STEP 3
-5. Select the desired baud rate using the baud rate register USART_BRR
-6. Set the RE bit USART_CR1. This enables the receiver which begins searching for a
-start bit.
+6. Set the RE bit USART_CR1. This enables
+	the receiver which begins searching for a
+	start bit.
 */
 	
 	// Enable USART
@@ -100,23 +86,29 @@ start bit.
 	// 1 stop bit = 0b00
 	USART1->CR2 &= ~USART_CR2_STOP;
 
-	// FIXME: set parity and flow control.
+	// parity = no
+	USART1->CR1 &= ~USART_CR1_PCE;
 
-#define USART_BRR(_fclk_,_baud_)            \
-	( (uint32_t)  (                     \
-	  (uint32_t)                        \
-		_fclk_ * 0xF /  _baud_ / 16 \
-	)             )
-	
+	// flow ctrl = none
+	USART1->CR3 &= ~(USART_CR3_CTSE
+		| USART_CR3_RTSE);
+
+	// Other things that need to be disabled.
+	USART1->CR2 &= ~(USART_CR2_LINEN
+		| USART_CR2_CLKEN);
+	// FIXME: Multitude of modes and interupts
+
 	// Baud rate, DIV = fclk / (16*baud)
 	// fclk = ABP2 clk = HCLK = 72Mhz = 
 	// 115200               xx xx xx
-	USART1->BRR = USART_BRR(72000000 ,115200);
+	USART1->BRR = USART_BRR(72000000,115200);
 
 	// enable reciever and transmiter.
-	// TODO:	
+	USART1->CR1 |= USART_CR1_TE | USART_CR1_RE;	
+}
 
-
+static void usart2_init(void)
+{
 	/** USART2: **/
 	/* REMAP */
 	// TX = PD5 , RX = PD6
@@ -127,23 +119,29 @@ start bit.
 	// TODO:
 
 	/* USART */
-	RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+	//RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 	// TODO:
+}
 
+static void usart3_init(void)
+{
 	/** USART3: **/
 	/* REMAP */
 	// TX = PC10, RX = PC11
 	// CK = PC12, CTS = PB13, RTS = PB14
 	AFIO->MAPR &= ~AFIO_MAPR_USART3_REMAP;
 	AFIO->MAPR |= 
-		AFIO_MAPR_REMAP_PARTIALREMAP;
+		AFIO_MAPR_USART3_REMAP_PARTIALREMAP;
 		
 	/* GPIO */
 	// TODO:
 
 	/* USART */
-	RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+	//RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
 	// TODO:
-	
 }
 
+void usart_init(void)
+{
+	usart1_init();
+}

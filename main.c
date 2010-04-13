@@ -8,6 +8,7 @@
 #include "stm32f10x_spi.h"
 #endif
 
+#include "compilers.h"
 #include "rcc.h"
 #include "usart.h"
 
@@ -20,7 +21,8 @@ void adc_init(void)
 	//	| RCC_CFG_ADCPRE_DIV6;
 }
 
-void tim_init(void) {
+void tim_init(void)
+{
 	/** TIM2: **/
 	// ETR/CH1 = PA0 , CH2 = PA1
 	//     CH3 = PB10, CH4 = PB11
@@ -37,7 +39,8 @@ void tim_init(void) {
 
 }
 
-void gpio_init(void) {
+void gpio_init(void)
+{
 	// enable gpio clock.
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN
 		| RCC_APB2ENR_IOPBEN
@@ -58,12 +61,14 @@ void gpio_init(void) {
 		= GPIOG->CRH = 0;
 }
 
-__attribute__((noreturn)) void main(void)
+__noreturn void main(void)
 {
 	rcc_init();
 	gpio_init();
+	usart_init();
 
 	for(;;) {
+		usart1_puts("HELLOOOOO");
 	}
 }
 
