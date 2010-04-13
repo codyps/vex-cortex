@@ -8,7 +8,6 @@
 #include "stm32f10x_spi.h"
 #endif
 
-
 #include "rcc.h"
 
 /*
@@ -22,7 +21,7 @@ void usart1_init(void)
 {
 	USART_InitTypeDef USART_InitStructure;
 
-	USART_InitStructure.USART_BaudRate = 115200;     // 115200
+	USART_InitStructure.USART_BaudRate = 115200;
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No ;
@@ -55,8 +54,8 @@ void usart_init(void) {
 	//  mode = 11, CNF = 10.
 	GPIOA->CRH &= ~(GPIO_CRH_MODE9
 		| GPIO_CRH_CNF9);
-	GPIOA->CRH |= GPIO_CRH_MODE9_0
-		| GPIO_CRH_MODE9_1
+	GPIOA->CRH |= GPIO_CRH_MODE9_1
+		| GPIO_CRH_MODE9_0
 		| GPIO_CRH_CNF9_1;
 	
 	// RX = PA10 = Floating input.
@@ -117,17 +116,24 @@ start bit.
 	
 	// 1 stop bit = 0b00
 	USART1->CR2 &= ~USART_CR2_STOP;
-	
-#define USART_BRR(_fclk_,_baud_)       \
-	( (uint32_t)  (                    \
-	  (uint32_t)                       \
-		_fclk_ * 0xF / ( 16 * _baud_ ) \
+
+	// FIXME: set parity and flow control.
+
+#define USART_BRR(_fclk_,_baud_)            \
+	( (uint32_t)  (                     \
+	  (uint32_t)                        \
+		_fclk_ * 0xF /  _baud_ / 16 \
 	)             )
 	
 	// Baud rate, DIV = fclk / (16*baud)
-	// 115200
-	USART1->BRR = USART_BRR(_fclk_,_baud_);
-	
+	// fclk = ABP2 clk = HCLK = 72Mhz = 
+	// 115200               xx xx xx
+	USART1->BRR = USART_BRR(72000000 ,115200);
+
+	// enable reciever and transmiter.
+	// TODO:	
+
+
 	/** USART2: **/
 	/* REMAP */
 	// TX = PD5 , RX = PD6
@@ -135,10 +141,12 @@ start bit.
 	AFIO->MAPR |= AFIO_MAPR_USART2_REMAP;
 	
 	/* GPIO */
-	
+	// TODO:
+
 	/* USART */
 	RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
-	
+	// TODO:
+
 	/** USART3: **/
 	/* REMAP */
 	// TX = PC10, RX = PC11
@@ -148,15 +156,33 @@ start bit.
 		AFIO_MAPR_REMAP_PARTIALREMAP;
 		
 	/* GPIO */
-	
+	// TODO:
+
 	/* USART */
 	RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+	// TODO:
 	
 }
 
-void gpio_init(void) {
-	GPIO_InitTypeDef GPIO_InitStructure;
+
+void tim_init(void) {
+	/** TIM2: **/
+	// ETR/CH1 = PA0 , CH2 = PA1
+	//     CH3 = PB10, CH4 = PB11
+	AFIO->MAPR &= ~AFIO_MAPR_TIM2_REMAP;
+	AFIO->MAPR |= 
+		AFIO_MAPR_TIM2_REMAP_PARTIALREMAP2;
 	
+	/** TIM3: **/
+	// CH1 = PC6, CH2 = PC7
+	// CH3 = PC8, CH4 = PC9
+	AFIO->MAPR &= ~AFIO_MAPR_TIM3_REMAP;
+	AFIO->MAPR |=
+		AFIO_MAPR_TIM3_REMAP_FULLREMAP;
+
+}
+
+void gpio_init(void) {
 	// enable gpio clock.
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN
 		| RCC_APB2ENR_IOPBEN
@@ -175,20 +201,6 @@ void gpio_init(void) {
 		= GPIOC->CRH = GPIOD->CRH
 		= GPIOE->CRH = GPIOF->CRH
 		= GPIOG->CRH = 0;
-	
-	/** TIM2: **/
-	// ETR/CH1 = PA0 , CH2 = PA1
-	//     CH3 = PB10, CH4 = PB11
-	AFIO->MAPR &= ~AFIO_MAPR_TIM2_REMAP;
-	AFIO->MAPR |= 
-		AFIO_MAPR_TIM2_REMAP_PARTIALREMAP2;
-	
-	/** TIM3: **/
-	// CH1 = PC6, CH2 = PC7
-	// CH3 = PC8, CH4 = PC9
-	AFIO->MAPR &= ~AFIO_MAPR_TIM3_REMAP;
-	AFIO->MAPR |=
-		AFIO_MAPR_TIM3_REMAP_FULLREMAP;
 }
 
 __attribute__((noreturn)) void main(void)
