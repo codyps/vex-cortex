@@ -5,6 +5,7 @@ STM_LIB_SRC= $(srcdir)/lib/startup/startup_stm32f10x_hd.s \
 
 SOURCE=main.c     \
        rcc.c      \
+       usart.c    \
        $(STM_LIB_SRC)
 
 srcdir=.
