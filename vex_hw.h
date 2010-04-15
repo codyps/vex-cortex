@@ -56,9 +56,12 @@ PE0 set high ("SPI1_INT")
 read 8 bytes of junk data.
 wait for PE3 && PE4 to be low.
 
-
-
 *Tranfers
+Sync set to SYNC_MAGIC.
+State set to 2.
+version set to 1.
+SystemsFlags = 1 to induce auton, 0 otherwise.
+
 Transfers are triggered every 20ms.
 32 bytes are transmitted for every transfer.
 PA11 set high, called "RTS". ("RTS high Used to ensure 1st 4 bytes").
@@ -106,7 +109,7 @@ typedef struct {
 	} joystick[2];
 	u8  version;
 	u8  packetNum;
-} master_spi_packet;
+} __packed spi_packet_m2u;
 
 //Data To Master
 typedef struct { 
@@ -132,9 +135,9 @@ typedef struct {
 	u8  Motor[8];       //PWM values 0-255
 	u8  MotorStatus[8]; //XXX: "PWM motor states (TBD)"
 	u8  Analog[8];      //Analog port (1-8)
-	u8  version;    
-	u8  packetNum;    
-} __packed slave_spi_packet;
+	u8  version;
+	u8  packetNum;
+} __packed spi_packet_u2m;
 
 
 /** GPIO INITS 
@@ -201,9 +204,10 @@ PB10: low when RX1 is connected.
 PC8 : low when RX2 is connected.
 */
 
-/* USART: Very difficult to determine
-which one should actually be initialized.
-USART{1,2,3} are likely the ones used.
+/* USART:
+USART1 is debug usart.
+USART{2,3} expected to be connected to
+pins labeled "USART{1,2}"
 Baud = 115200, word = 8b, 1 stopbit,
 no parity, no harware flow ctrl.
 */
@@ -220,7 +224,7 @@ Claim the 9000 value gives a 1ms tick.
  
 /* TIM{2,3} is using capture #3 and
  * filling the pwm{1,2} array.
- *  might be crystals.
+ * For crystal input.
 */
 
 /* TIM4 essentially ignored */
