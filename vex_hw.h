@@ -80,65 +80,71 @@ packet num (in the slave packet) is incremented following each transfer.
 */
 
 #define SYNC_MAGIC 0xC917
+#define SPI_PACKET_LEN 32 // 32, 16bit transfers.
+#define MOTOR_CT 8
 
-//Data From Master
-typedef struct { 
-	u16 sync; // Should always be SYNC_MAGIC
-	union {
-		u8  a;
-		struct state_pack b;
-	} state;
-	union {
-		u8 a;
-		struct {
-			u8 tx1_active:1;
-			u8 tx2_active:1;
-			u8 spare:1;
-			u8 competition_mode:1; //XXX: what does this imply?
-			u8 reset_slave:1; //XXX: noted as "(Reserved)" but has a name.
-			u8 joystick_mode:1; //XXX: wtf is joystick mode?
-			u8 autonomus:1;
-			u8 disable:1;
-		} __packed b;
-	} SystemFlags;
-	u8  mainBatteryVoltage; // mult by 0.0591 for something readable.      
-	u8  backupBatteryVoltage;
-	union {
-		u8  a[12];
-		struct oi_data b;
-	} joystick[2];
-	u8  version;
-	u8  packetNum;
-} __packed spi_packet_m2u;
+typedef union {
+	u16 w[SPI_PACKET_LEN];
 
-//Data To Master
-typedef struct { 
-	u16 sync; // should always be SYNC_MAGIC
-	union {
-		u8 a;
-		struct state_pack b;
-	} state;
-	union {
-		u8 a;
-		struct {
-			u8 auton:1;
-			u8 crystal_mode:1;
-			u8 disable:1;
-			u8 brake:1; //XXX: what does this mean?
-			u8 enable_printfs:1; //XXX: noted as "Reserved for Master"
-			u8 enable_display:1; //XXX: noted as "Reserved for Master"
-			u8 reserved:2; // unmentioned.
-		} __packed b;
-	} SystemFlags; //XXX: "Reserved for Slave (TBD)"
-	u8  DigitalByte1;   //Digital bits 1-8      
-	u8  DigitalByte2;   //Digital bits 9-12, 13-16 (spare)   
-	u8  Motor[8];       //PWM values 0-255
-	u8  MotorStatus[8]; //XXX: "PWM motor states (TBD)"
-	u8  Analog[8];      //Analog port (1-8)
-	u8  version;
-	u8  packetNum;
-} __packed spi_packet_u2m;
+	//Data From Master
+	struct { 
+		u16 sync; // Should always be SYNC_MAGIC
+		union {
+			u8  a;
+			struct state_pack b;
+		} state;
+		union {
+			u8 a;
+			struct {
+				u8 tx1_active:1;
+				u8 tx2_active:1;
+				u8 spare:1;
+				u8 competition_mode:1; //XXX: what does this imply?
+				u8 reset_slave:1; //XXX: noted as "(Reserved)" but has a name.
+				u8 joystick_mode:1; //XXX: wtf is joystick mode?
+				u8 autonomus:1;
+				u8 disable:1;
+			} __packed b;
+		} SystemFlags;
+		u8  batt_volt_main; // mult by 0.0591 for something readable.      
+		u8  batt_volt_backup;
+		union {
+			u8  a[12];
+			struct oi_data b;
+		} joystick[2];
+		u8  version;
+		u8  packet_num;
+	} __packed m2u;
 
+	//Data To Master
+	struct { 
+		u16 sync; // should always be SYNC_MAGIC
+		union {
+			u8 a;
+			struct state_pack b;
+		} state;
+		union {
+			u8 a;
+			struct {
+				u8 auton:1;
+				u8 crystal_mode:1;
+				u8 disable:1;
+				u8 brake:1; //XXX: what does this mean?
+				u8 enable_printfs:1; //XXX: noted as "Reserved for Master"
+				u8 enable_display:1; //XXX: noted as "Reserved for Master"
+				u8 reserved:2; // unmentioned.
+			} __packed b;
+		} SystemFlags; //XXX: "Reserved for Slave (TBD)"
+		u8  digital1;  //Digital bits 1-8      
+		u8  digital2;  //Digital bits 9-12, 13-16 (spare)   
+		u8  motors[8];  //PWM values 0-255
+		u8  motor_status[8]; //XXX: "PWM motor states (TBD)"
+		u8  analog[8]; //Analog port (1-8)
+		u8  version;
+		u8  packet_num;
+	} __packed u2m;
+
+} spi_packet_vex;
 
 /** GPIO INITS 
  ** Things starting with "Claim" reverence
