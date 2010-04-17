@@ -139,7 +139,6 @@ typedef struct {
 	u8  packetNum;
 } __packed spi_packet_u2m;
 
-
 /** GPIO INITS 
  ** Things starting with "Claim" reverence
  ** Vex/IFI comments in orig. code. 
@@ -227,7 +226,7 @@ Claim the 9000 value gives a 1ms tick.
  * For crystal input.
 */
 
-/* TIM4 essentially ignored */
+/* TIM4 interupt ignored (flags mucked) */
 
 /* EXTI9_5 is KEY_BUTTON?
  * seems to blink some LED.
