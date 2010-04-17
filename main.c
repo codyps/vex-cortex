@@ -12,7 +12,7 @@
 #include "rcc.h"
 #include "usart.h"
 
-void adc_init(void)
+static void adc_init(void)
 {
 	// ADCCLK(max 14Mhz)
 	// XXX: IFI overclocked the ADC to 18MHz.
@@ -21,7 +21,7 @@ void adc_init(void)
 	//	| RCC_CFG_ADCPRE_DIV6;
 }
 
-void tim_init(void)
+static void tim_init(void)
 {
 	/** TIM2: **/
 	// ETR/CH1 = PA0 , CH2 = PA1
@@ -39,10 +39,11 @@ void tim_init(void)
 
 }
 
-void gpio_init(void)
+static void gpio_init(void)
 {
-	// enable gpio clock.
-	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN
+	// enable gpio clock (+ AFIO for good measure)
+	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN
+		| RCC_APB2ENR_IOPAEN
 		| RCC_APB2ENR_IOPBEN
 		| RCC_APB2ENR_IOPCEN
 		| RCC_APB2ENR_IOPDEN
