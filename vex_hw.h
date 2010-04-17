@@ -56,9 +56,12 @@ PE0 set high ("SPI1_INT")
 read 8 bytes of junk data.
 wait for PE3 && PE4 to be low.
 
-
-
 *Tranfers
+Sync set to SYNC_MAGIC.
+State set to 2.
+version set to 1.
+SystemsFlags = 1 to induce auton, 0 otherwise.
+
 Transfers are triggered every 20ms.
 32 bytes are transmitted for every transfer.
 PA11 set high, called "RTS". ("RTS high Used to ensure 1st 4 bytes").
@@ -106,7 +109,7 @@ typedef struct {
 	} joystick[2];
 	u8  version;
 	u8  packetNum;
-} master_spi_packet;
+} __packed spi_packet_m2u;
 
 //Data To Master
 typedef struct { 
@@ -132,14 +135,109 @@ typedef struct {
 	u8  Motor[8];       //PWM values 0-255
 	u8  MotorStatus[8]; //XXX: "PWM motor states (TBD)"
 	u8  Analog[8];      //Analog port (1-8)
-	u8  version;    
-	u8  packetNum;    
-} __packed slave_spi_packet;
+	u8  version;
+	u8  packetNum;
+} __packed spi_packet_u2m;
 
+
+/** GPIO INITS 
+ ** Things starting with "Claim" reverence
+ ** Vex/IFI comments in orig. code. 
+ ** For comedic value
+ **/
+
+/* Uses SPI1: 
+ * SCK, MISO, MOSI : PA{5,6,7} 
+ * XXX: Vex makes them all ouputs
+ */
+
+/* "RTS" : PA11 (set as input) */
+
+/* "RX1" (Crystals) : A10 (set as output) */
+
+/* Noted as "Set to analog" : PC{0,1,2,3} */
+
+/* under same heading, set as input floating:
+ *   PC{6,7,8}
+ */
+
+/* "Smart Motor" Setup :
+ * Call "SetMotorControl_To_Neutral"  
+ * Claim to set PD{0,1} to ouput pp. (Don't)
+ * PD{3,4,7,8} = output pp.
+ * Then do this nice thing:
+ *  GPIOD->CRH = (9 << 16) | (9 << 20) 
+ *	  | (9 << 24) | ( 9 << 28) | 1;
+ * Thanks VEX.
+ */
+ 
+/* PD{0,1} = input */
+
+/* PE{4,7,8,9,10,11,12,13,14} = input
+ *  Note: only claim to set PE{13,14} = input
+ */
+ 
+/* Claim to set PE{9,11,13,14} = output pp
+ * Actualy set PE{0,6} to output pp
+ */ 
+
+/** END GPIO INITS **/
+ 
+/* SPI1:
+	Master Mode, bidirectional,
+	16b data size, CPOL_Low,
+	CPHA_2Edge, NSS_Soft,
+	Prescale = 32 (Note: "highest = 16"),
+	MSB First. CRC Poly = 7.
+*/
+
+/* ADC1:
+Channels : {0,1,2,3,12,13,10,11}
+Set to scan mode
+*/
+
+/* Interrupts used:
+TIM1, TIM2, TIM3, TIM4, EXTI9_5
+ 
 /* Crystal Detection
 PB10: low when RX1 is connected.
 PC8 : low when RX2 is connected.
 */
+
+/* USART:
+USART1 is debug usart.
+USART{2,3} expected to be connected to
+pins labeled "USART{1,2}"
+Baud = 115200, word = 8b, 1 stopbit,
+no parity, no harware flow ctrl.
+*/
+
+/* SysTick
+VeX/IFI appears to use this for a msdelay.
+"reload" set to 9000, interupt enabled.
+Claim the 9000 value gives a 1ms tick.
+*/
+
+/* TIM1 used to trigger an update of the
+ * master processor
+ */
+ 
+/* TIM{2,3} is using capture #3 and
+ * filling the pwm{1,2} array.
+ * For crystal input.
+*/
+
+/* TIM4 essentially ignored */
+
+/* EXTI9_5 is KEY_BUTTON?
+ * seems to blink some LED.
+ */
+
+/* There are constant references to the
+ * following things. No idea what they mean:
+TARGET_BOARD
+KEY_BUTTON
+ */ 
 
 /* Control Pins for Motors 1 & 10. Connected directly to the STM.
 // See Set_MotorControl_Sw{1,2} for details.
