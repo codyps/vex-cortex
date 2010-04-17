@@ -6,6 +6,7 @@ STM_LIB_SRC= $(srcdir)/lib/startup/startup_stm32f10x_hd.s \
 SOURCE=main.c     \
        rcc.c      \
        usart.c    \
+       stm32f10x_it.c \
        $(STM_LIB_SRC)
 
 srcdir=.
@@ -24,30 +25,36 @@ LD=$(ARCH_PREFIX)gcc
 NM=$(ARCH_PREFIX)nm
 OBJDUMP=$(ARCH_PREFIX)objdump
 OBJCOPY=$(ARCH_PREFIX)objcopy
+STRIP=$(ARCH_PREFIX)strip
 
 CC_INC=-I$(srcdir) -I$(srcdir)/lib/fwlib/inc -I$(srcdir)/lib
 LD_INC=-L$(srcdir)/lib -L$(srcdir)/ld
 
-# When changing boards, modify STMPROC, HSE_VALUE, and the
-#  startup asm code.
-
+# When changing boards, modify STMPROC,
+# HSE_VALUE, and the startup asm code.
+# And the linker script
+LD_SCRIPT=stm32f103VD.ld
 STMPROC=STM32F10X_HD
 HSE_VALUE=8000000
 
 ALL_CFLAGS=-MD -D$(STMPROC) -DHSE_VALUE=$(HSE_VALUE) \
-           -mthumb -mcpu=cortex-m3 -Wall -g          \
+           -mthumb -mcpu=cortex-m3 -Wall             \
            -Wno-main -DUSE_STDPERIPH_DRIVER -pipe    \
-           $(CC_INC) $(CFLAGS)
+           -ffunction-sections                       \
+	   $(CC_INC) $(CFLAGS)
 ALL_LDFLAGS=$(ALL_CFLAGS)                            \
+	    -nostartfiles                            \
             -Wl,--gc-sections,-Map=$@.map,-cref      \
             -Wl,-u,Reset_Handler                     \
-            $(LD_INC) -T STM32F103VD.ld
+	    -fwhole-program -Wl,-static              \
+            $(LD_INC) -T $(LD_SCRIPT)
 
 ALL_ASFLAGS=$(ALL_CFLAGS)
 
 .SUFFIXES:
 
-all: $(TARGET).hex $(TARGET).bin $(TARGET).elf.lss $(TARGET).elf.sym
+all: $(TARGET).hex $(TARGET).bin $(TARGET).elf.strip \
+	$(TARGET).elf.sym  $(TARGET).elf.lss
 
 Makefile:;
 
@@ -75,9 +82,14 @@ Makefile:;
 %.elf.sym: %.elf
 	$(NM) -n $< > $@
 
+%.elf.strip: %.elf
+	$(STRIP) -S $< -o $@
+	$(NM) -n $<.strip > $@.sym
+	$(OBJDUMP) -h -S $<.strip > $@.lss
+
 
 clean:
-	@$(FIND) . -regex '.*\.\([od]\|elf\|hex\|bin\|map\|lss\|sym\)'\
+	@$(FIND) . -regex '.*\.\([od]\|elf\|hex\|bin\|map\|lss\|sym\|strip\)'\
 		-printf 'RM %P\n' -delete
 
 .PHONY: clean all
