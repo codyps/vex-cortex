@@ -7,19 +7,22 @@
 		_fclk_ * 0xF /  _baud_ / 16 \
 	)             )
 
-void usart1_putchar(const char c) {
+void usart1_putchar(const char c)
+{
 	while(!(USART1->SR & USART_SR_TXE));
 	USART1->DR = c;
 }
 
-void usart1_puts(const char *c) {
+void usart1_puts(const char *c)
+{
 	while( (*c) != '\0') {
 		usart1_putchar(*c);
 		c++;
 	}
 }
 
-static void usart1_init(void) {
+static void usart1_init(void)
+{
 	/** USART1:
 	TX = PA9, RX = PA10
 	**/
@@ -109,7 +112,6 @@ static void usart1_init(void) {
 
 static void usart2_init(void)
 {
-	/** USART2: **/
 	/* REMAP */
 	// TX = PD5 , RX = PD6
 	// CK = PD7, CTS = PD3 , RTS = PD4
@@ -118,14 +120,15 @@ static void usart2_init(void)
 	/* GPIO */
 	// TODO:
 
+	/* CLOCK */
+	RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+
 	/* USART */
-	//RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 	// TODO:
 }
 
 static void usart3_init(void)
 {
-	/** USART3: **/
 	/* REMAP */
 	// TX = PC10, RX = PC11
 	// CK = PC12, CTS = PB13, RTS = PB14
@@ -136,8 +139,10 @@ static void usart3_init(void)
 	/* GPIO */
 	// TODO:
 
+	/* CLOCK */
+	RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+
 	/* USART */
-	//RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
 	// TODO:
 }
 
