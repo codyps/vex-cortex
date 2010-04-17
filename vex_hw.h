@@ -198,6 +198,7 @@ Set to scan mode
 
 /* Interrupts used:
 TIM1, TIM2, TIM3, TIM4, EXTI9_5
+*/
  
 /* Crystal Detection
 PB10: low when RX1 is connected.
