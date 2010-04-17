@@ -1,5 +1,7 @@
 
 #include "stm32f10x.h"
+#include "vex_hw.h"
+
 
 #if defined(USE_STDPERIPH_DRIVER)
 #include "stm32f10x_rcc.h"
@@ -60,6 +62,91 @@ static void gpio_init(void)
 		= GPIOC->CRH = GPIOD->CRH
 		= GPIOE->CRH = GPIOF->CRH
 		= GPIOG->CRH = 0;
+
+}
+
+static void spi_init(void)
+{
+	/* Clock */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
+
+	/* GPIO */
+	/* 
+	Alternate function SPI1_REMAP = 0 SPI1_REMAP = 1
+	SPI1_NSS             PA4           PA15
+	SPI1_SCK             PA5           PB3
+	SPI1_MISO            PA6           PB4
+	SPI1_MOSI            PA7           PB5 
+	*/
+
+	GPIO_InitTypeDef GPIO_param;
+
+	GPIO_param.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7;
+	GPIO_param.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_param.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_Init(GPIOA, &GPIO_param);	
+
+	GPIO_param.GPIO_Pin = GPIO_Pin_6;
+	GPIO_param.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOA, &GPIO_param);
+
+	/* SPI */
+	SPI_InitTypeDef SPI_param;
+
+	SPI_param.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+	SPI_param.SPI_Mode = SPI_Mode_Master;
+	SPI_param.SPI_DataSize = SPI_DataSize_16b;
+	SPI_param.SPI_CPOL = SPI_CPOL_Low;
+	SPI_param.SPI_CPHA = SPI_CPHA_2Edge;
+	SPI_param.SPI_NSS = SPI_NSS_Soft;
+	SPI_param.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_32;
+	SPI_param.SPI_FirstBit = SPI_FirstBit_MSB;
+	SPI_param.SPI_CRCPolynomial = 7;
+	SPI_Init(SPI1, &SPI_param);
+
+	SPI_Cmd(SPI1, ENABLE);
+
+	/* Master Detect Lines */
+	GPIO_param.GPIO_Pin = GPIO_Pin_3 | GPIO_Pin_4;
+	GPIO_param.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOE, &GPIO_param);
+
+	/* Master Ctrl Line */
+	GPIO_param.GPIO_Pin = GPIO_Pin_0;
+	GPIO_param.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_param.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOE, &GPIO_param);
+
+	/* Famed "RTS" Pin */
+	GPIO_param.GPIO_Pin = GPIO_Pin_11;
+	GPIO_param.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_param.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOA, &GPIO_param);	
+
+	/* Master Connect Routines */
+	uint8_t i;
+	uint16_t init_data[8];
+
+	// Slave Select?
+	GPIO_SetBits(GPIOE, GPIO_Pin_0);
+
+	// Interesting...
+	for(i = 0; i < 8; i++)
+		init_data[i] = SPI_I2S_ReceiveData(SPI1);
+
+}
+
+void spi_xfer_vex(spi_packet_m2u *m2u, spi_packet_u2m *u2m)
+{
+
+
+}
+
+bool is_master_ready(void)
+{
+	// master is ready when both input lines are low.
+	return !GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_3) &&
+		!GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_4);
 }
 
 __noreturn void main(void)
@@ -67,9 +154,14 @@ __noreturn void main(void)
 	rcc_init();
 	gpio_init();
 	usart_init();
+	spi_init();
+
+	while(!is_master_ready()) {
+		usart1_puts("Waiting for master\n");
+	}
 
 	for(;;) {
-		usart1_puts("HELLOOOOO");
+		usart1_puts("HELLOOOOO\n");
 	}
 }
 
