@@ -1,4 +1,5 @@
 
+#include <string.h>
 #include "stm32f10x.h"
 #include "vex_hw.h"
 
