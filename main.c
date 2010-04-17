@@ -201,8 +201,8 @@ __noreturn void main(void)
 
 	spi_packet_vex m2u, u2m;
 
-	memset(m2u,0,sizeof(m2u));
-	memset(u2m,0,sizeof(u2m));
+	memset(&m2u,0,sizeof(m2u));
+	memset(&u2m,0,sizeof(u2m));
 
 	vex_spi_packet_init_u2m(&u2m);
 	vex_spi_packet_init_m2u(&m2u);
