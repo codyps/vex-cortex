@@ -175,12 +175,32 @@ bool is_master_ready(void)
 		!GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_4);
 }
 
+void vex_spi_packet_init_m2u(spi_packet_vex *m2u)
+{
+
+}
+
+void vex_spi_packet_init_u2m(spi_packet_vex *u2m)
+{
+	u2m->u2m.sync = SYNC_MAGIC;
+	u2m->u2m.version = 1;
+
+	uint8_t i;
+	for(i = 0; i < MOTOR_CT; i++) {
+		u2m->u2m.motors[i] = 127;
+	}
+}
+
 __noreturn void main(void)
 {
 	rcc_init();
 	gpio_init();
 	usart_init();
 	spi_init();
+
+	spi_packet_vex m2u, u2m;
+
+	vex_spi_packet_init_u2m(&u2m);
 
 	while(!is_master_ready()) {
 		usart1_puts("Waiting for master\n");
