@@ -133,13 +133,39 @@ static void spi_init(void)
 	// Interesting...
 	for(i = 0; i < 8; i++)
 		init_data[i] = SPI_I2S_ReceiveData(SPI1);
-
 }
 
-void spi_xfer_vex(spi_packet_m2u *m2u, spi_packet_u2m *u2m)
+void spi_vex_xfer(spi_packet_vex *m2u, spi_packet_vex *u2m)
 {
+	static uint8_t packet_num = 0;
+	uint8_t gap = 0;
+	volatile uint16_t d = 0;
+	uint8_t i = 0;
+	
+	u2m->u2m.packet_num = packet_num;
 
+	GPIO_SetBits(GPIOA, GPIO_Pin_11); // "RTS" high
 
+	for (i = 0; i < SPI_PACKET_LEN; i++) {                  
+		GPIO_ResetBits(GPIOE, GPIO_Pin_0); // Slave Select
+		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+		SPI_I2S_SendData(SPI1, u2m->w[i]); 
+
+		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);
+		m2u->w[i] = SPI_I2S_ReceiveData(SPI1);
+
+		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+		GPIO_SetBits(GPIOE, GPIO_Pin_0); // Slave Select
+		for (d = 0; d < 150; d++);          //15us
+		gap++;
+		if (gap == 4) { //put a gap after 4 bytes xfered
+			for (d = 0; d < 1000; d++);       //210us
+			GPIO_ResetBits(GPIOA, GPIO_Pin_11); //RTS low
+			gap = 0;
+		}
+	}
+
+	packet_num++;   
 }
 
 bool is_master_ready(void)
