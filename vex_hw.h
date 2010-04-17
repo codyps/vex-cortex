@@ -42,13 +42,7 @@ struct oi_data {
 	u8 reserved2[3]; // noted as "spare"
 } __packed;
 
-struct state_pack {
-	u8 iack:1;
-	u8 config:1;
-	u8 initializing:1; // data is not ready.
-	u8 valid:1; // data is valid
-	u8 reserved:4;
-} __packed;
+
 
 /* SPI (uses SPI1)
 *Initialization Process:
@@ -82,6 +76,14 @@ packet num (in the slave packet) is incremented following each transfer.
 #define SYNC_MAGIC 0xC917
 #define SPI_PACKET_LEN 32 // 32, 16bit transfers.
 #define MOTOR_CT 8
+
+struct state_pack {
+	u8 iack:1;
+	u8 config:1;
+	u8 initializing:1; // data is not ready.
+	u8 valid:1; // data is valid
+	u8 reserved:4;
+} __packed;
 
 typedef union {
 	u16 w[SPI_PACKET_LEN];

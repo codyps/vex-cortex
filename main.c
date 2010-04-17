@@ -106,18 +106,18 @@ static void spi_init(void)
 
 	SPI_Cmd(SPI1, ENABLE);
 
-	/* Master Detect Lines */
+	/* Master Detect Lines: PE{3,4} */
 	GPIO_param.GPIO_Pin = GPIO_Pin_3 | GPIO_Pin_4;
 	GPIO_param.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOE, &GPIO_param);
 
-	/* Master Ctrl Line */
+	/* Slave select : PE0 */
 	GPIO_param.GPIO_Pin = GPIO_Pin_0;
 	GPIO_param.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_param.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(GPIOE, &GPIO_param);
 
-	/* Famed "RTS" Pin */
+	/* Famed "RTS" Pin: PA11 */
 	GPIO_param.GPIO_Pin = GPIO_Pin_11;
 	GPIO_param.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_param.GPIO_Mode = GPIO_Mode_Out_PP;
@@ -156,10 +156,10 @@ void spi_vex_xfer(spi_packet_vex *m2u, spi_packet_vex *u2m)
 
 		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
 		GPIO_SetBits(GPIOE, GPIO_Pin_0); // Slave Select
-		for (d = 0; d < 150; d++);          //15us
+		for (d = 0; d < 150; d++); //15us
 		gap++;
 		if (gap == 4) { //put a gap after 4 bytes xfered
-			for (d = 0; d < 1000; d++);       //210us
+			for (d = 0; d < 1000; d++); //210us
 			GPIO_ResetBits(GPIOA, GPIO_Pin_11); //RTS low
 			gap = 0;
 		}
@@ -200,7 +200,11 @@ __noreturn void main(void)
 
 	spi_packet_vex m2u, u2m;
 
+	memset(m2u,0,sizeof(m2u));
+	memset(u2m,0,sizeof(u2m));
+
 	vex_spi_packet_init_u2m(&u2m);
+	vex_spi_packet_init_m2u(&m2u);
 
 	while(!is_master_ready()) {
 		usart1_puts("Waiting for master\n");
