@@ -2,20 +2,22 @@
 
 Files:
 
-vex_hw.h : contains documentation on the vex hardware, settings, spi, etc.
+vex_hw.h : contains documentation on the vex hardware,
+	settings, spi, etc.
 
 Directories:
 
 ./lib : includes *{.c,.h} from the STD Peripheral Lib 3.2.0
 ./ld  : linker scripts from various sources.
-./STM*: example project which uses an older Std. Peri. Lib and a
-        different board.
+./STM*: example project which uses an older Std. Peri. 
+	Lib and a different board.
 
 Building:
 
-You need a "arm-none-eabi" (or "armv7m-none-eabi" if you want to have fun)
-toolchain (binutils + gcc + newlib). Other arm targets ("arm-elf-none")
-may also work, but I haven't tested them.
+You need a "arm-none-eabi" (or "armv7m-none-eabi" if you 
+want to have fun) toolchain (binutils + gcc + newlib). 
+Other arm targets ("arm-elf-none") may also work, but 
+I haven't tested them.
 
 Windows:
 	codesourcery lite (calls make cs-make) 
@@ -23,13 +25,15 @@ Windows:
 	Manual build using cygwin should be possible.
 
 Linux:
-	I use gentoo's crossdev script with the library selection fixed to
-		select newlib for *-none-* targets (may not always be
+	I use gentoo's crossdev script with the library 
+		selection fixed to select newlib for
+		*-none-* targets (may not always be 
 		correct, but works fine here).
 	Otherwise, manual build.
 
 Mac :
 	Manual build.
 
-> make all # generates the main.{hex,bin} for flashing, and others for debugging
+> make all # generates the main.{hex,bin} for flashing, 
+	   #and others for debugging
 > make clean # removes all generated files.
