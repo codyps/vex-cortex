@@ -1,20 +1,19 @@
 TARGET = main
 FWLIB_DIR = $(srcdir)/lib/fwlib
-STM_LIB_SRC= $(srcdir)/lib/startup/startup_stm32f10x_hd.s \
+SRC_STM_LIB= $(srcdir)/lib/startup/startup_stm32f10x_hd.s \
              $(wildcard $(FWLIB_DIR)/src/*.c)
 
 
 SRC_PRINTF = $(wildcard $(srcdir)/lib/small_printf/*.c)
-LIB_PRINTF = $(wildcard $(srcdir)/lib/e_stdio_thumb.a)
 
 
 SOURCE=main.c         \
-       syscall.c      \
        rcc.c          \
        spi.c          \
        usart.c        \
        stm32f10x_it.c \
-       $(STM_LIB_SRC)
+       $(SRC_PRINTF)  \
+       $(SRC_STM_LIB)
 
 srcdir=.
 #VPATH=$(srcdir)/lib/fwlib/src $(srcdir)
@@ -35,19 +34,21 @@ OBJCOPY=$(ARCH_PREFIX)objcopy
 STRIP=$(ARCH_PREFIX)strip
 
 CC_INC=-I$(srcdir) -I$(srcdir)/lib/fwlib/inc -I$(srcdir)/lib
-LD_INC=-L$(srcdir)/lib -L$(srcdir)/ld
+LD_INC=-L$(srcdir)/lib -L$(srcdir)/ld -L$(srcdir)/ld/other
 
 # When changing boards, modify STMPROC,
 # HSE_VALUE, and the startup asm code.
 # And the linker script
-LD_SCRIPT=stm32f103VD.ld
+#LD_SCRIPT=stm32f103VD.ld
+LD_SCRIPT=STM32F103_384K_64K_FLASH.ld
 STMPROC=STM32F10X_HD
 HSE_VALUE=8000000
 
 ALL_CFLAGS=-MD -D$(STMPROC) -DHSE_VALUE=$(HSE_VALUE) \
            -mthumb -mcpu=cortex-m3 -Wall             \
            -Wno-main -DUSE_STDPERIPH_DRIVER -pipe    \
-           -ffunction-sections                       \
+           -ffunction-sections -fno-unwind-tables    \
+	   -D_SMALL_PRINTF -DNO_FLOATING_POINT       \
            $(CC_INC) $(CFLAGS)
 ALL_LDFLAGS=$(ALL_CFLAGS)                        \
             -nostartfiles                        \
