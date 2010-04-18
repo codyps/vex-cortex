@@ -1,3 +1,6 @@
+#ifndef VEX_HW_
+#define VEX_HW_
+
 /* Documetaion of the VEX interfaces */
 
 #define __packed __attribute__((packed))
@@ -29,15 +32,15 @@ struct oi_data {
 	u8 g6_d:1;
 	u8 reserved1:4; // not mentioned.
 	
-	u8 g8_down:1;
-	u8 g8_left:1;
-	u8 g8_up:1;
-	u8 g8_right:1;
+	u8 g8_d:1;
+	u8 g8_l:1;
+	u8 g8_u:1;
+	u8 g8_r:1;
 	
-	u8 g7_down:1;
-	u8 g7_left:1;
-	u8 g7_up:1;
-	u8 g7_right:1;
+	u8 g7_d:1;
+	u8 g7_l:1;
+	u8 g7_u:1;
+	u8 g7_r:1;
 	
 	u8 reserved2[3]; // noted as "spare"
 } __packed;
@@ -283,3 +286,5 @@ PE7 : 10
 PD0 : 11
 PD1 : 12
 */
+
+#endif
