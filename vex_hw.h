@@ -77,6 +77,13 @@ packet num (in the slave packet) is incremented following each transfer.
 #define SPI_PACKET_LEN 32 // 32, 16bit transfers.
 #define MOTOR_CT 8
 
+enum state_enum {
+	STATE_IACK = 1,
+	STATE_CONFIG = 2,
+	STATE_INIT = 4,
+	STATE_VALID = 8
+};
+
 struct state_pack {
 	u8 iack:1;
 	u8 config:1;
