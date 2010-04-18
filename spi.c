@@ -6,6 +6,7 @@
 
 #include "vex_hw.h"
 #include "spi.h"
+#include "usart.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -83,7 +84,7 @@ void spi_init(void)
 void spi_process_packets(spi_packet_vex *m2u, spi_packet_vex *u2m)
 {
 	if (m2u->m2u.sync != SYNC_MAGIC) {
-		//usart1_puts("Bad sync magic\r\n");
+		usart1_puts("Bad sync magic\n");
 		return;
 	}
 	
@@ -96,19 +97,22 @@ void spi_process_packets(spi_packet_vex *m2u, spi_packet_vex *u2m)
 		} else if (m2u->m2u.state.b.iack) {
 			u2m->u2m.state.a = STATE_VALID;
 		}
+
+		usart1_puts("Handle config.");
 	}
 	
 	if (m2u->m2u.state.b.initializing) {
 		// not yet good data.
 		u2m->u2m.state.a = STATE_VALID; // we have data ready
 		m2u->m2u.packet_num = 1; // XXX: "to skip print"
+		usart1_puts("initializing...");
 	}
 	
 	if (m2u->m2u.state.b.valid) {
 		// Yay! data!
 		u2m->u2m.state.a = STATE_VALID;
 		
-		//usart1_puts("Got valid data");
+		usart1_puts("Got valid data");
 		// TODO: put it somewhere.
 	}
 }
@@ -172,6 +176,24 @@ void spi_packet_init_u2m(spi_packet_vex *u2m)
 	for(i = 0; i < MOTOR_CT; i++) {
 		u2m->u2m.motors[i] = 127;
 	}
+}
+
+void usart1_puth(uint8_t a) {
+	uint8_t h1 = (uint8_t) a >> 4;
+	uint8_t h0 = (uint8_t) a & 0x0F;
+
+	if (h1>9)
+		h1 += 'A' - 9;
+	else
+		h1 += '0';
+
+	if (h0>9)
+		h0 += 'A' - 9;
+	else
+		h0 += '0';
+
+	usart1_putc(h1);
+	usart1_putc(h0);
 }
 
 
