@@ -1,4 +1,8 @@
 
+#include <string.h>
+#include <stdio.h>
+#include <stdbool.h>
+
 #include "stm32f10x.h"
 #include "vex_hw.h"
 
@@ -8,12 +12,17 @@
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_usart.h"
 #include "stm32f10x_spi.h"
+#include "stm32f10x_tim.h"
+#include "stm32f10x_misc.h"
+#include "core_cm3.h"
 #endif
 
 #include "compilers.h"
 #include "rcc.h"
 #include "usart.h"
+#include "spi.h"
 
+#if 0
 static void adc_init(void)
 {
 	// ADCCLK(max 14Mhz)
@@ -40,6 +49,48 @@ static void tim_init(void)
 		AFIO_MAPR_TIM3_REMAP_FULLREMAP;
 
 }
+#endif
+
+static void nvic_init(void)
+{
+	NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x0);
+	
+}
+
+static void tim1_init(void)
+{
+	RCC_APB2PeriphClockCmd(
+		RCC_APB2Periph_TIM1
+		, ENABLE);
+	
+	NVIC_InitTypeDef NVIC_param;	
+	/* Enable the TIM1 global Interrupt */
+	NVIC_param.NVIC_IRQChannel = TIM1_CC_IRQn;
+	NVIC_param.NVIC_IRQChannelPreemptionPriority = 3;
+	NVIC_param.NVIC_IRQChannelSubPriority = 3;
+	NVIC_param.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_param);
+
+	/* ---------------------------------------------------------------
+	TIM1 Configuration: Output Compare Toggle Mode:
+	TIM2CLK = 72 MHz, Prescaler = 20, 0xFFFF = 4.5ms
+	--------------------------------------------------------------- */
+	TIM_TimeBaseInitTypeDef  TIM_param;
+	/* Time base configuration */
+	TIM_param.TIM_Period = 65535;
+	TIM_param.TIM_Prescaler = 20;
+	TIM_param.TIM_ClockDivision = 0;
+	TIM_param.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInit(TIM1, &TIM_param);
+
+	/* TIM enable counter */
+	TIM_Cmd(TIM1, ENABLE);
+
+	/* TIM IT enable */
+	TIM_ITConfig(TIM1, TIM_IT_CC1, ENABLE);
+	TIM1->SMCR &= 0xFFF8;
+	
+}
 
 static void gpio_init(void)
 {
@@ -65,131 +116,7 @@ static void gpio_init(void)
 
 }
 
-static void spi_init(void)
-{
-	/* Clock */
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
-
-	/* GPIO */
-	/* 
-	Alternate function SPI1_REMAP = 0 SPI1_REMAP = 1
-	SPI1_NSS             PA4           PA15
-	SPI1_SCK             PA5           PB3
-	SPI1_MISO            PA6           PB4
-	SPI1_MOSI            PA7           PB5 
-	*/
-
-	GPIO_InitTypeDef GPIO_param;
-
-	GPIO_param.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7;
-	GPIO_param.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_param.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIO_Init(GPIOA, &GPIO_param);	
-
-	GPIO_param.GPIO_Pin = GPIO_Pin_6;
-	GPIO_param.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	GPIO_Init(GPIOA, &GPIO_param);
-
-	/* SPI */
-	SPI_InitTypeDef SPI_param;
-
-	SPI_param.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-	SPI_param.SPI_Mode = SPI_Mode_Master;
-	SPI_param.SPI_DataSize = SPI_DataSize_16b;
-	SPI_param.SPI_CPOL = SPI_CPOL_Low;
-	SPI_param.SPI_CPHA = SPI_CPHA_2Edge;
-	SPI_param.SPI_NSS = SPI_NSS_Soft;
-	SPI_param.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_32;
-	SPI_param.SPI_FirstBit = SPI_FirstBit_MSB;
-	SPI_param.SPI_CRCPolynomial = 7;
-	SPI_Init(SPI1, &SPI_param);
-
-	SPI_Cmd(SPI1, ENABLE);
-
-	/* Master Detect Lines: PE{3,4} */
-	GPIO_param.GPIO_Pin = GPIO_Pin_3 | GPIO_Pin_4;
-	GPIO_param.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	GPIO_Init(GPIOE, &GPIO_param);
-
-	/* Slave select : PE0 */
-	GPIO_param.GPIO_Pin = GPIO_Pin_0;
-	GPIO_param.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_param.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOE, &GPIO_param);
-
-	/* Famed "RTS" Pin: PA11 */
-	GPIO_param.GPIO_Pin = GPIO_Pin_11;
-	GPIO_param.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_param.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOA, &GPIO_param);	
-
-	/* Master Connect Routines */
-	uint8_t i;
-	uint16_t init_data[8];
-
-	// Slave Select?
-	GPIO_SetBits(GPIOE, GPIO_Pin_0);
-
-	// Interesting...
-	for(i = 0; i < 8; i++)
-		init_data[i] = SPI_I2S_ReceiveData(SPI1);
-}
-
-void spi_vex_xfer(spi_packet_vex *m2u, spi_packet_vex *u2m)
-{
-	static uint8_t packet_num = 0;
-	uint8_t gap = 0;
-	volatile uint16_t d = 0;
-	uint8_t i = 0;
-	
-	u2m->u2m.packet_num = packet_num;
-
-	GPIO_SetBits(GPIOA, GPIO_Pin_11); // "RTS" high
-
-	for (i = 0; i < SPI_PACKET_LEN; i++) {                  
-		GPIO_ResetBits(GPIOE, GPIO_Pin_0); // Slave Select
-		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
-		SPI_I2S_SendData(SPI1, u2m->w[i]); 
-
-		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);
-		m2u->w[i] = SPI_I2S_ReceiveData(SPI1);
-
-		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
-		GPIO_SetBits(GPIOE, GPIO_Pin_0); // Slave Select
-		for (d = 0; d < 150; d++); //15us
-		gap++;
-		if (gap == 4) { //put a gap after 4 bytes xfered
-			for (d = 0; d < 1000; d++); //210us
-			GPIO_ResetBits(GPIOA, GPIO_Pin_11); //RTS low
-			gap = 0;
-		}
-	}
-
-	packet_num++;   
-}
-
-bool is_master_ready(void)
-{
-	// master is ready when both input lines are low.
-	return !GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_3) &&
-		!GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_4);
-}
-
-void vex_spi_packet_init_m2u(spi_packet_vex *m2u)
-{
-
-}
-
-void vex_spi_packet_init_u2m(spi_packet_vex *u2m)
-{
-	u2m->u2m.sync = SYNC_MAGIC;
-	u2m->u2m.version = 1;
-
-	uint8_t i;
-	for(i = 0; i < MOTOR_CT; i++) {
-		u2m->u2m.motors[i] = 127;
-	}
-}
+volatile bool spi_transfer_flag = true;
 
 __noreturn void main(void)
 {
@@ -197,21 +124,93 @@ __noreturn void main(void)
 	gpio_init();
 	usart_init();
 	spi_init();
-
+	nvic_init();
+	tim1_init();
+	
 	spi_packet_vex m2u, u2m;
 
-	memset(m2u,0,sizeof(m2u));
-	memset(u2m,0,sizeof(u2m));
+	memset(&u2m,0,sizeof(u2m));
+	memset(&m2u,0,sizeof(m2u));
 
-	vex_spi_packet_init_u2m(&u2m);
-	vex_spi_packet_init_m2u(&m2u);
-
+	spi_packet_init_u2m(&u2m);
+	spi_packet_init_m2u(&m2u);
+	
 	while(!is_master_ready()) {
-		usart1_puts("Waiting for master\n");
+		usart1_puts("** MASTER WAIT **\n");
 	}
-
+	
+	usart1_puts("[ INIT DONE ]\n");
+	uint16_t i = 0;
 	for(;;) {
-		usart1_puts("HELLOOOOO\n");
+		if (spi_transfer_flag) {
+			vex_spi_xfer(&m2u,&u2m);
+			printf("i = %d\n",i);
+			i++;
+			
+			print_m2u(&m2u);
+
+			spi_transfer_flag = false;
+		}
+	}
+}
+
+#if 0
+void rtc_init(void) {
+	// Wait for register syncronized flag.
+	RTC->CRL &= RTC_CRL_RSF;
+	while(!(RTC->CRL & RTC_CRL_RSF));
+	
+	/*
+Configuration procedure:
+1. Poll RTOFF, wait until its value goes to ‘1’
+2. Set the CNF bit to enter configuration mode
+3. Write to one or more RTC registers
+4. Clear the CNF bit to exit configuration mode
+5. Poll RTOFF, wait until its value goes to ‘1’ 
+	to check the end of the write operation.
+The write operation only executes when the CNF 
+bit is cleared; it takes at least three
+RTCCLK cycles to complete.
+*/
+	
+	// Wait for registers to be writeable.
+	while(!(RTC->CLR & RTC_CLR_RTOFF));
+	
+	// enable config mode
+	RTC->CLR |= RTC_CLR_CNF;
+	
+	/** { Config start **/
+	
+	// disable interrupts.
+	RTC->CRH &= ~(RTC_CRH_OWIE
+		| RTC_CRH_ALRIE
+		| RTC_CRH_SECIE);
+	
+	// clear flags
+	RTC->CRL &= ~(RTC_CRL_OWF
+		|RTC_CRL_ALRF
+		|RTC_CRL_SECF);
+	
+	
+	
+	
+	
+	/** } config end **/
+	
+	// commit changes
+	RTC->CLR &= RTC_CLR_CNF;
+	
+	// wait for write to complete
+	while(!(RTC->CLR & RTC_CLR_RTOFF));
+}
+#endif
+
+/* */
+__attribute__((interrupt)) void TIM1_CC_IRQHandler(void)
+{
+	if(TIM_GetITStatus(TIM1, TIM_IT_CC1)) {
+		spi_transfer_flag = true;
+		TIM_ClearITPendingBit(TIM1, TIM_IT_CC1);
 	}
 }
 
