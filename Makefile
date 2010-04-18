@@ -8,10 +8,11 @@ SRC_PRINTF = $(wildcard $(srcdir)/lib/small_printf/*.c)
 LIB_PRINTF = $(wildcard $(srcdir)/lib/e_stdio_thumb.a)
 
 
-SOURCE=main.c     \
-       syscall.c  \
-       rcc.c      \
-       usart.c    \
+SOURCE=main.c         \
+       syscall.c      \
+       rcc.c          \
+       spi.c          \
+       usart.c        \
        stm32f10x_it.c \
        $(STM_LIB_SRC)
 
