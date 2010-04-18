@@ -123,7 +123,7 @@ typedef union {
 		union {
 			u8  a[12];
 			struct oi_data b;
-		} joystick[2];
+		} joysticks[2];
 		u8  version;
 		u8  packet_num;
 	} __packed m2u;
