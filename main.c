@@ -1,5 +1,13 @@
 
 #include <string.h>
+#include <stdio.h>
+#include <reent.h>
+#include <errno.h>
+#include <stdlib.h> /* abort */
+#include <sys/types.h>
+#include <sys/stat.h>
+
+
 #include "stm32f10x.h"
 #include "vex_hw.h"
 
@@ -136,7 +144,38 @@ static void spi_init(void)
 		init_data[i] = SPI_I2S_ReceiveData(SPI1);
 }
 
-void spi_vex_xfer(spi_packet_vex *m2u, spi_packet_vex *u2m)
+void vex_spi_process_packets(spi_packet_vex *m2u, spi_packet_vex *u2m) {
+	if (m2u->m2u.sync != SYNC_MAGIC) {
+		usart1_puts("Bad sync magic\r\n");
+		return;
+	}
+	
+		
+	if (m2u->m2u.state.b.config) {
+		// config state
+		static bool not_yet_iacked = 1;
+		if (not_yet_iacked) {
+			u2m->u2m.state.a = STATE_IACK | STATE_CONFIG;
+		} else if (m2u->m2u.state.b.iack) {
+			u2m->u2m.state.a = STATE_VALID;
+		}
+	}
+	
+	if (m2u->m2u.state.b.initializing) {
+		// not yet good data.
+		u2m->u2m.state.a = STATE_VALID; // we have data ready
+		m2u->m2u.packet_num = 1; // XXX: "to skip print"
+	}
+	
+	if (m2u->m2u.state.b.valid) {
+		// Yay! data!
+		u2m->u2m.state.a = STATE_VALID;
+		
+		// TODO: put it somewhere.
+	}
+}
+
+void vex_spi_xfer(spi_packet_vex *m2u, spi_packet_vex *u2m)
 {
 	static uint8_t packet_num = 0;
 	uint8_t gap = 0;
@@ -165,8 +204,9 @@ void spi_vex_xfer(spi_packet_vex *m2u, spi_packet_vex *u2m)
 			gap = 0;
 		}
 	}
-
-	packet_num++;   
+	packet_num++;
+	
+	vex_spi_process_packets(m2u,u2m);
 }
 
 bool is_master_ready(void)
@@ -185,7 +225,11 @@ void vex_spi_packet_init_u2m(spi_packet_vex *u2m)
 {
 	u2m->u2m.sync = SYNC_MAGIC;
 	u2m->u2m.version = 1;
-
+	u2m->u2m.packet_num = 0;
+	
+	// First send needs to be "config"
+	u2m->u2m.state.a = STATE_CONFIG;
+	
 	uint8_t i;
 	for(i = 0; i < MOTOR_CT; i++) {
 		u2m->u2m.motors[i] = 127;
@@ -201,19 +245,110 @@ __noreturn void main(void)
 
 	spi_packet_vex m2u, u2m;
 
-	memset(&m2u,0,sizeof(m2u));
 	memset(&u2m,0,sizeof(u2m));
+	memset(&m2u,0,sizeof(m2u));
 
 	vex_spi_packet_init_u2m(&u2m);
 	vex_spi_packet_init_m2u(&m2u);
-
+	
 	while(!is_master_ready()) {
-		usart1_puts("Waiting for master\n");
+		usart1_puts("** MASTER WAIT **\r\n");
 	}
-
+	
 	for(;;) {
-		usart1_puts("HELLOOOOO\n");
+		vex_spi_xfer(&m2u,&u2m);
+		usart1_puts("0123456789\r\n");
+		printf("hello\n");
 	}
+}
+
+
+//#undef errno
+//extern int errno;
+
+int _getpid(void)
+{
+	return 1;
+}
+
+extern char _end; /* Defined by the linker */
+static char *heap_end;
+
+char* get_heap_end(void)
+{
+	return (char*) heap_end;
+}
+
+char* get_stack_top(void)
+{
+	return (char*) __get_MSP();
+	// return (char*) __get_PSP();
+}
+
+caddr_t _sbrk(int incr)
+{
+	char *prev_heap_end;
+	if (heap_end == 0) {
+		heap_end = &_end;
+	}
+	prev_heap_end = heap_end;
+#if 0
+	if (heap_end + incr > get_stack_top()) {
+		xprintf("Heap and stack collision\n");
+		abort();
+	}
+#endif
+	heap_end += incr;
+	return (caddr_t) prev_heap_end;
+}
+
+int _close(int fd)
+{
+	return -1;
+}
+
+int _fstat(int file, struct stat *st)
+{
+	file = file; /* avoid warning */
+	st->st_mode = S_IFCHR;
+	return 0;
+}
+
+int _lseek(int file, int ptr, int dir) {
+	file = file; /* avoid warning */
+	ptr = ptr; /* avoid warning */
+	dir = dir; /* avoid warning */
+	return 0;
+}
+
+int _read(int file, char *ptr, int len)
+{
+	file = file; /* avoid warning */
+	ptr = ptr; /* avoid warning */
+	len = len; /* avoid warning */
+	return 0;
+}
+
+int _write(int file, char *ptr, int len)
+{
+	int todo;
+	
+	for (todo = 0; todo < len; todo++) {
+		if (file == 0) {
+			usart1_putchar(*ptr);
+		} else {
+			usart1_putchar(*ptr);
+		}
+		ptr++;
+	}
+	return len;
+}
+
+// 1 means we are connected to a term.
+// 0 means not ^.
+int _isatty(int fd)
+{
+	return 1;
 }
 
 #ifdef  USE_FULL_ASSERT
