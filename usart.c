@@ -26,6 +26,10 @@ static void usart1_init(void)
 	/** USART1:
 	TX = PA9, RX = PA10
 	**/
+	
+	/* Clock: */
+	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+	
 	/* GPIO: */
 	// TX = PA9 = AltFunc push/pull =
 	//  mode = 11, CNF = 10.
@@ -42,7 +46,7 @@ static void usart1_init(void)
 	GPIOA->CRH |= GPIO_CRH_CNF10_0;
 	
 	/* USART */
-	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+	
 	
 /* Transmit
 1. Enable the USART by writing
@@ -106,10 +110,11 @@ static void usart1_init(void)
 	// 115200               xx xx xx
 	USART1->BRR = USART_BRR(72000000,115200);
 
-	// enable reciever and transmiter.
-	USART1->CR1 |= USART_CR1_TE | USART_CR1_RE;	
+	// enable transmiter. // not yet reciever.
+	USART1->CR1 |= USART_CR1_TE; // | USART_CR1_RE;	
 }
 
+#if 0
 static void usart2_init(void)
 {
 	/* REMAP */
@@ -145,6 +150,7 @@ static void usart3_init(void)
 	/* USART */
 	// TODO:
 }
+#endif
 
 void usart_init(void)
 {
