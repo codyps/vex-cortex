@@ -1,6 +1,9 @@
 #ifndef SPI_H_
 #define SPI_H_
 
+#include "vex_hw.h"
+#include <stdbool.h>
+
 void print_m2u(spi_packet_vex *m2u);
 void print_joystick(struct oi_data *oi);
 void spi_packet_init_m2u(spi_packet_vex *m2u);

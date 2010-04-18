@@ -4,8 +4,10 @@
 #include "stm32f10x_spi.h"
 #include "stm32f10x_gpio.h"
 
+#include "vex_hw.h"
 #include "spi.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 
 void spi_init(void)
@@ -142,7 +144,7 @@ void vex_spi_xfer(spi_packet_vex *m2u, spi_packet_vex *u2m)
 	}
 	packet_num++;
 	
-	vex_spi_process_packets(m2u,u2m);
+	spi_process_packets(m2u,u2m);
 }
 
 bool is_master_ready(void)
@@ -217,9 +219,10 @@ void print_m2u(spi_packet_vex *m2u)
 	printf("sync: %x; state: %x; "
 		"sysflag: %x; b_main: %x; "
 		"b_back: %x; version: %x; "
-		"pnum: %s\n"
+		"pnum: %x\n"
 		,m2u->m2u.sync
-		,m2u->m2u.sys_flags
+		,m2u->m2u.state.a
+		,m2u->m2u.sys_flags.a
 		,m2u->m2u.batt_volt_main
 		,m2u->m2u.batt_volt_backup
 		,m2u->m2u.version
