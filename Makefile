@@ -3,6 +3,11 @@ FWLIB_DIR = $(srcdir)/lib/fwlib
 STM_LIB_SRC= $(srcdir)/lib/startup/startup_stm32f10x_hd.s \
              $(wildcard $(FWLIB_DIR)/src/*.c)
 
+
+SRC_PRINTF = $(wildcard $(srcdir)/lib/small_printf/*.c)
+LIB_PRINTF = $(wildcard $(srcdir)/lib/e_stdio_thumb.a)
+
+
 SOURCE=main.c     \
        rcc.c      \
        usart.c    \
@@ -41,12 +46,12 @@ ALL_CFLAGS=-MD -D$(STMPROC) -DHSE_VALUE=$(HSE_VALUE) \
            -mthumb -mcpu=cortex-m3 -Wall             \
            -Wno-main -DUSE_STDPERIPH_DRIVER -pipe    \
            -ffunction-sections                       \
-	   $(CC_INC) $(CFLAGS)
-ALL_LDFLAGS=$(ALL_CFLAGS)                            \
-	    -nostartfiles                            \
-            -Wl,--gc-sections,-Map=$@.map,-cref      \
-            -Wl,-u,Reset_Handler                     \
-	    -fwhole-program -Wl,-static              \
+           $(CC_INC) $(CFLAGS)
+ALL_LDFLAGS=$(ALL_CFLAGS)                        \
+            -nostartfiles                        \
+            -Wl,--gc-sections,-Map=$@.map,-cref  \
+            -Wl,-u,Reset_Handler                 \
+            -fwhole-program -Wl,-static          \
             $(LD_INC) -T $(LD_SCRIPT)
 
 ALL_ASFLAGS=$(ALL_CFLAGS)
