@@ -9,6 +9,7 @@ LIB_PRINTF = $(wildcard $(srcdir)/lib/e_stdio_thumb.a)
 
 
 SOURCE=main.c     \
+       syscall.c  \
        rcc.c      \
        usart.c    \
        stm32f10x_it.c \

@@ -1,12 +1,6 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <reent.h>
-#include <errno.h>
-#include <stdlib.h> /* abort */
-#include <sys/types.h>
-#include <sys/stat.h>
-
 
 #include "stm32f10x.h"
 #include "vex_hw.h"
@@ -23,6 +17,7 @@
 #include "rcc.h"
 #include "usart.h"
 
+#if 0
 static void adc_init(void)
 {
 	// ADCCLK(max 14Mhz)
@@ -49,6 +44,7 @@ static void tim_init(void)
 		AFIO_MAPR_TIM3_REMAP_FULLREMAP;
 
 }
+#endif
 
 static void gpio_init(void)
 {
@@ -146,7 +142,7 @@ static void spi_init(void)
 
 void vex_spi_process_packets(spi_packet_vex *m2u, spi_packet_vex *u2m) {
 	if (m2u->m2u.sync != SYNC_MAGIC) {
-		usart1_puts("Bad sync magic\r\n");
+		//usart1_puts("Bad sync magic\r\n");
 		return;
 	}
 	
@@ -171,6 +167,7 @@ void vex_spi_process_packets(spi_packet_vex *m2u, spi_packet_vex *u2m) {
 		// Yay! data!
 		u2m->u2m.state.a = STATE_VALID;
 		
+		//usart1_puts("Got valid data");
 		// TODO: put it somewhere.
 	}
 }
@@ -252,104 +249,19 @@ __noreturn void main(void)
 	vex_spi_packet_init_m2u(&m2u);
 	
 	while(!is_master_ready()) {
-		usart1_puts("** MASTER WAIT **\r\n");
+		usart1_puts("** MASTER WAIT **\n");
 	}
+	
+	usart1_puts("[ INIT DONE ]\n");
 	
 	for(;;) {
-		vex_spi_xfer(&m2u,&u2m);
-		usart1_puts("0123456789\r\n");
-		printf("hello\n");
+		//vex_spi_xfer(&m2u,&u2m);
+				
+		usart1_puts("0123456789\n");
+		//printf("hello\n");
 	}
 }
 
-
-//#undef errno
-//extern int errno;
-
-int _getpid(void)
-{
-	return 1;
-}
-
-extern char _end; /* Defined by the linker */
-static char *heap_end;
-
-char* get_heap_end(void)
-{
-	return (char*) heap_end;
-}
-
-char* get_stack_top(void)
-{
-	return (char*) __get_MSP();
-	// return (char*) __get_PSP();
-}
-
-caddr_t _sbrk(int incr)
-{
-	char *prev_heap_end;
-	if (heap_end == 0) {
-		heap_end = &_end;
-	}
-	prev_heap_end = heap_end;
-#if 0
-	if (heap_end + incr > get_stack_top()) {
-		xprintf("Heap and stack collision\n");
-		abort();
-	}
-#endif
-	heap_end += incr;
-	return (caddr_t) prev_heap_end;
-}
-
-int _close(int fd)
-{
-	return -1;
-}
-
-int _fstat(int file, struct stat *st)
-{
-	file = file; /* avoid warning */
-	st->st_mode = S_IFCHR;
-	return 0;
-}
-
-int _lseek(int file, int ptr, int dir) {
-	file = file; /* avoid warning */
-	ptr = ptr; /* avoid warning */
-	dir = dir; /* avoid warning */
-	return 0;
-}
-
-int _read(int file, char *ptr, int len)
-{
-	file = file; /* avoid warning */
-	ptr = ptr; /* avoid warning */
-	len = len; /* avoid warning */
-	return 0;
-}
-
-int _write(int file, char *ptr, int len)
-{
-	int todo;
-	
-	for (todo = 0; todo < len; todo++) {
-		if (file == 0) {
-			usart1_putchar(*ptr);
-		} else {
-			usart1_putchar(*ptr);
-		}
-		ptr++;
-	}
-	return len;
-}
-
-// 1 means we are connected to a term.
-// 0 means not ^.
-int _isatty(int fd)
-{
-	return 1;
-}
 
 #ifdef  USE_FULL_ASSERT
 void assert_failed(u8* file, u32 line)
