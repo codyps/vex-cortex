@@ -8,6 +8,10 @@
 		_fclk_ * 0xF /  _baud_ / 16 \
 	)             )
 
+
+void __io_putchar(const char c) {
+	usart1_putc(c);
+}
 void usart1_putc(const char c)
 {
 	while(!USART_GetFlagStatus(USART1,
