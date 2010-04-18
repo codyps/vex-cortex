@@ -114,7 +114,7 @@ typedef union {
 				u8 autonomus:1;
 				u8 disable:1;
 			} __packed b;
-		} SystemFlags;
+		} sys_flags;
 		u8  batt_volt_main; // mult by 0.0591 for something readable.      
 		u8  batt_volt_backup;
 		union {
@@ -143,7 +143,7 @@ typedef union {
 				u8 enable_display:1; //XXX: noted as "Reserved for Master"
 				u8 reserved:2; // unmentioned.
 			} __packed b;
-		} SystemFlags; //XXX: "Reserved for Slave (TBD)"
+		} sys_flags; //XXX: "Reserved for Slave (TBD)"
 		u8  digital1;  //Digital bits 1-8      
 		u8  digital2;  //Digital bits 9-12, 13-16 (spare)   
 		u8  motors[8];  //PWM values 0-255
