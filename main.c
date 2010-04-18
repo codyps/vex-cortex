@@ -121,10 +121,10 @@ volatile bool spi_transfer_flag = true;
 __noreturn void main(void)
 {
 	rcc_init();
-	nvic_init();
 	gpio_init();
 	usart_init();
 	spi_init();
+	nvic_init();
 	tim1_init();
 	
 	spi_packet_vex m2u, u2m;
@@ -140,25 +140,75 @@ __noreturn void main(void)
 	}
 	
 	usart1_puts("[ INIT DONE ]\n");
-	
+	uint16_t i = 0;
 	for(;;) {
 		if (spi_transfer_flag) {
 			vex_spi_xfer(&m2u,&u2m);
-				
-			usart1_puts("0123456789\n");
-			//printf("hello\n");
+			printf("i = %d\n",i);
+			i++;
+			
+			print_m2u(&m2u);
+
 			spi_transfer_flag = false;
 		}
 	}
 }
 
+#if 0
+void rtc_init(void) {
+	// Wait for register syncronized flag.
+	RTC->CRL &= RTC_CRL_RSF;
+	while(!(RTC->CRL & RTC_CRL_RSF));
+	
+	/*
+Configuration procedure:
+1. Poll RTOFF, wait until its value goes to ‘1’
+2. Set the CNF bit to enter configuration mode
+3. Write to one or more RTC registers
+4. Clear the CNF bit to exit configuration mode
+5. Poll RTOFF, wait until its value goes to ‘1’ 
+	to check the end of the write operation.
+The write operation only executes when the CNF 
+bit is cleared; it takes at least three
+RTCCLK cycles to complete.
+*/
+	
+	// Wait for registers to be writeable.
+	while(!(RTC->CLR & RTC_CLR_RTOFF));
+	
+	// enable config mode
+	RTC->CLR |= RTC_CLR_CNF;
+	
+	/** { Config start **/
+	
+	// disable interrupts.
+	RTC->CRH &= ~(RTC_CRH_OWIE
+		| RTC_CRH_ALRIE
+		| RTC_CRH_SECIE);
+	
+	// clear flags
+	RTC->CRL &= ~(RTC_CRL_OWF
+		|RTC_CRL_ALRF
+		|RTC_CRL_SECF);
+	
+	
+	
+	
+	
+	/** } config end **/
+	
+	// commit changes
+	RTC->CLR &= RTC_CLR_CNF;
+	
+	// wait for write to complete
+	while(!(RTC->CLR & RTC_CLR_RTOFF));
+}
+#endif
+
 /* */
 __attribute__((interrupt)) void TIM1_CC_IRQHandler(void)
 {
-	static u8 ct = 0;
-	ct++;
-	if(!TIM_GetITStatus(TIM1, TIM_IT_CC1)) {
-		ct = 0;
+	if(TIM_GetITStatus(TIM1, TIM_IT_CC1)) {
 		spi_transfer_flag = true;
 		TIM_ClearITPendingBit(TIM1, TIM_IT_CC1);
 	}
