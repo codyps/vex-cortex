@@ -175,7 +175,7 @@ void spi_packet_init_u2m(spi_packet_vex *u2m)
 }
 
 
-void print_joystick(struct oi_data *oi)
+void print_oi(struct oi_data *oi)
 {
 	printf("rt1: %x; rt2: %x; "
 		"lt1: %x; lt2: %x; "
@@ -228,6 +228,9 @@ void print_m2u(spi_packet_vex *m2u)
 		,m2u->m2u.version
 		,m2u->m2u.packet_num
 		);
+
+	print_oi(&(m2u->m2u.joysticks[0].b));
+	print_oi(&(m2u->m2u.joysticks[1].b));
 		
 }
 
