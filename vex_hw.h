@@ -77,7 +77,7 @@ packet num (in the slave packet) is incremented following each transfer.
 */
 
 #define SYNC_MAGIC 0xC917
-#define SPI_PACKET_LEN 32 // 32, 16bit transfers.
+#define SPI_PACKET_LEN 16 // 32, 16bit transfers.
 #define MOTOR_CT 8
 
 enum state_enum {
@@ -223,7 +223,7 @@ PB10: low when RX1 is connected.
 PC8 : low when RX2 is connected.
 */
 
-/* USART:
+/* USART:git://github.com/jmesmon/vex-cortex.git
 USART1 is debug usart.
 USART{2,3} expected to be connected to
 pins labeled "USART{1,2}"
