@@ -136,16 +136,18 @@ __noreturn void main(void)
 	spi_packet_init_m2u(&m2u);
 	
 	while(!is_master_ready()) {
-		usart1_puts("** MASTER WAIT **\n");
+		printf("** MASTER WAIT **\n");
 	}
 	
-	usart1_puts("[ INIT DONE ]\n");
+	printf("[ INIT DONE ]\n");
 	uint16_t i = 0;
 	for(;;) {
 		if (spi_transfer_flag) {
 			vex_spi_xfer(&m2u,&u2m);
 			printf("i = %d\n",i);
 			i++;
+
+			u2m.u2m.motors[1] = m2u.m2u.joysticks[0].b.axis_3;
 			
 			print_m2u(&m2u);
 
