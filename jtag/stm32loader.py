@@ -60,21 +60,22 @@ class CommandInterface:
 
     def _wait_for_ask(self, info = ""):
         # wait for ask
-        try:
-            ask = ord(self.sp.read())
-        except:
-            raise CmdException("Can't read port or timeout")
-        else:
-            if ask == 0x79:
-                # ACK
-                return 1
+        while True:
+            try:
+                ask = ord(self.sp.read())
+            except:
+                raise CmdException("Can't read port or timeout")
             else:
-                if ask == 0x1F:
-                    # NACK
-                    raise CmdException("NACK "+info)
+                if ask == 0x79:
+                    # ACK
+                    return 1
                 else:
-                    # Unknow responce
-                    raise CmdException("Unknown response. "+info+": "+hex(ask))
+                    if ask == 0x1F:
+                        # NACK
+                        raise CmdException("NACK "+info)
+                    else:
+                        # Unknow responce
+                        raise CmdException("Unknown response. "+info+": "+hex(ask))
 
 
     def reset(self):
@@ -287,7 +288,14 @@ class CommandInterface:
                 pbar.update(pbar.maxval-lng)
             else:
                 mdebug(5, "Write %(len)d bytes at 0x%(addr)X" % {'addr': addr, 'len': 256})
-            self.cmdWriteMemory(addr, data[offs:offs+256])
+
+            # HACK
+            try:
+                self.cmdWriteMemory(addr, data[offs:offs+256])
+            except Exception:
+                continue
+            # HACK
+
             offs = offs + 256
             addr = addr + 256
             lng = lng - 256
