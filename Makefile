@@ -12,7 +12,7 @@ SOURCE=main.c         \
        spi.c          \
        usart.c        \
        stm32f10x_it.c \
-       $(SRC_PRINTF)  \
+       syscall.c      \
        $(SRC_STM_LIB)
 
 srcdir=.
@@ -97,7 +97,6 @@ Makefile:;
 
 
 clean:
-	@$(FIND) . -regex '.*\.\([od]\|elf\|hex\|bin\|map\|lss\|sym\|strip\)'\
-		-printf 'RM %P\n' -delete
+	@$(FIND) -E . -regex '.*\.([od]|elf|hex|bin|map|lss|sym|strip)' -delete
 
 .PHONY: clean all
