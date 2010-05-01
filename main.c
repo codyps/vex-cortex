@@ -68,7 +68,7 @@ __noreturn void main(void)
 	usart_init();
 
 	for(;;) {
-		usart1_puts("HELLOOOOO");
+		usart1_puts("HELLOOOOO\n");
 	}
 }
 
