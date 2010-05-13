@@ -37,6 +37,7 @@ $(MAIN_OUT_ELF): main.o stm32f10x_it.o lib/libstm32.a
 
 $(MAIN_OUT_BIN): $(MAIN_OUT_ELF)
 	$(OBJCP) $(OBJCPFLAGS) $< $@
+	$(OBJCP) -O ihex $< main.hex 
 
 
 # flash
