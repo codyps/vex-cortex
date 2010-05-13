@@ -1,3 +1,6 @@
+#ifndef VEX_HW_
+#define VEX_HW_
+
 /* Documetaion of the VEX interfaces */
 
 #define __packed __attribute__((packed))
@@ -29,26 +32,20 @@ struct oi_data {
 	u8 g6_d:1;
 	u8 reserved1:4; // not mentioned.
 	
-	u8 g8_down:1;
-	u8 g8_left:1;
-	u8 g8_up:1;
-	u8 g8_right:1;
+	u8 g8_d:1;
+	u8 g8_l:1;
+	u8 g8_u:1;
+	u8 g8_r:1;
 	
-	u8 g7_down:1;
-	u8 g7_left:1;
-	u8 g7_up:1;
-	u8 g7_right:1;
+	u8 g7_d:1;
+	u8 g7_l:1;
+	u8 g7_u:1;
+	u8 g7_r:1;
 	
 	u8 reserved2[3]; // noted as "spare"
 } __packed;
 
-struct state_pack {
-	u8 iack:1;
-	u8 config:1;
-	u8 initializing:1; // data is not ready.
-	u8 valid:1; // data is valid
-	u8 reserved:4;
-} __packed;
+
 
 /* SPI (uses SPI1)
 *Initialization Process:
@@ -80,65 +77,86 @@ packet num (in the slave packet) is incremented following each transfer.
 */
 
 #define SYNC_MAGIC 0xC917
+#define SPI_PACKET_LEN 32 // 32, 16bit transfers.
+#define MOTOR_CT 8
 
-//Data From Master
-typedef struct { 
-	u16 sync; // Should always be SYNC_MAGIC
-	union {
-		u8  a;
-		struct state_pack b;
-	} state;
-	union {
-		u8 a;
-		struct {
-			u8 tx1_active:1;
-			u8 tx2_active:1;
-			u8 spare:1;
-			u8 competition_mode:1; //XXX: what does this imply?
-			u8 reset_slave:1; //XXX: noted as "(Reserved)" but has a name.
-			u8 joystick_mode:1; //XXX: wtf is joystick mode?
-			u8 autonomus:1;
-			u8 disable:1;
-		} __packed b;
-	} SystemFlags;
-	u8  mainBatteryVoltage; // mult by 0.0591 for something readable.      
-	u8  backupBatteryVoltage;
-	union {
-		u8  a[12];
-		struct oi_data b;
-	} joystick[2];
-	u8  version;
-	u8  packetNum;
-} __packed spi_packet_m2u;
+enum state_enum {
+	STATE_IACK = 1,
+	STATE_CONFIG = 2,
+	STATE_INIT = 4,
+	STATE_VALID = 8
+};
 
-//Data To Master
-typedef struct { 
-	u16 sync; // should always be SYNC_MAGIC
-	union {
-		u8 a;
-		struct state_pack b;
-	} state;
-	union {
-		u8 a;
-		struct {
-			u8 auton:1;
-			u8 crystal_mode:1;
-			u8 disable:1;
-			u8 brake:1; //XXX: what does this mean?
-			u8 enable_printfs:1; //XXX: noted as "Reserved for Master"
-			u8 enable_display:1; //XXX: noted as "Reserved for Master"
-			u8 reserved:2; // unmentioned.
-		} __packed b;
-	} SystemFlags; //XXX: "Reserved for Slave (TBD)"
-	u8  DigitalByte1;   //Digital bits 1-8      
-	u8  DigitalByte2;   //Digital bits 9-12, 13-16 (spare)   
-	u8  Motor[8];       //PWM values 0-255
-	u8  MotorStatus[8]; //XXX: "PWM motor states (TBD)"
-	u8  Analog[8];      //Analog port (1-8)
-	u8  version;
-	u8  packetNum;
-} __packed spi_packet_u2m;
+struct state_pack {
+	u8 iack:1;
+	u8 config:1;
+	u8 initializing:1; // data is not ready.
+	u8 valid:1; // data is valid
+	u8 reserved:4;
+} __packed;
 
+typedef union {
+	u16 w[SPI_PACKET_LEN];
+
+	//Data From Master
+	struct { 
+		u16 sync; // Should always be SYNC_MAGIC
+		union {
+			u8  a;
+			struct state_pack b;
+		} state;
+		union {
+			u8 a;
+			struct {
+				u8 tx1_active:1;
+				u8 tx2_active:1;
+				u8 spare:1;
+				u8 competition_mode:1; //XXX: what does this imply?
+				u8 reset_slave:1; //XXX: noted as "(Reserved)" but has a name.
+				u8 joystick_mode:1; //XXX: wtf is joystick mode?
+				u8 autonomus:1;
+				u8 disable:1;
+			} __packed b;
+		} sys_flags;
+		u8  batt_volt_main; // mult by 0.0591 for something readable.      
+		u8  batt_volt_backup;
+		union {
+			u8  a[12];
+			struct oi_data b;
+		} joysticks[2];
+		u8  version;
+		u8  packet_num;
+	} __packed m2u;
+
+	//Data To Master
+	struct { 
+		u16 sync; // should always be SYNC_MAGIC
+		union {
+			u8 a;
+			struct state_pack b;
+		} state;
+		union {
+			u8 a;
+			struct {
+				u8 auton:1;
+				u8 crystal_mode:1;
+				u8 disable:1;
+				u8 brake:1; //XXX: what does this mean?
+				u8 enable_printfs:1; //XXX: noted as "Reserved for Master"
+				u8 enable_display:1; //XXX: noted as "Reserved for Master"
+				u8 reserved:2; // unmentioned.
+			} __packed b;
+		} sys_flags; //XXX: "Reserved for Slave (TBD)"
+		u8  digital1;  //Digital bits 1-8      
+		u8  digital2;  //Digital bits 9-12, 13-16 (spare)   
+		u8  motors[8];  //PWM values 0-255
+		u8  motor_status[8]; //XXX: "PWM motor states (TBD)"
+		u8  analog[8]; //Analog port (1-8)
+		u8  version;
+		u8  packet_num;
+	} __packed u2m;
+
+} spi_packet_vex;
 
 /** GPIO INITS 
  ** Things starting with "Claim" reverence
@@ -198,6 +216,7 @@ Set to scan mode
 
 /* Interrupts used:
 TIM1, TIM2, TIM3, TIM4, EXTI9_5
+*/
  
 /* Crystal Detection
 PB10: low when RX1 is connected.
@@ -227,7 +246,7 @@ Claim the 9000 value gives a 1ms tick.
  * For crystal input.
 */
 
-/* TIM4 essentially ignored */
+/* TIM4 interupt ignored (flags mucked) */
 
 /* EXTI9_5 is KEY_BUTTON?
  * seems to blink some LED.
@@ -267,3 +286,5 @@ PE7 : 10
 PD0 : 11
 PD1 : 12
 */
+
+#endif

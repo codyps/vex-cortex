@@ -1,5 +1,6 @@
 #include "stm32f10x.h"
 #include "usart.h"
+#include "stm32f10x_usart.h"
 
 #define USART_BRR(_fclk_,_baud_)            \
 	( (uint32_t)  (                     \
@@ -7,22 +8,41 @@
 		_fclk_ * 0xF /  _baud_ / 16 \
 	)             )
 
-void usart1_putchar(const char c) {
-	while(!(USART1->SR & USART_SR_TXE));
+
+void __io_putchar(const char c) {
+	usart1_putc(c);
+}
+void usart1_putc(const char c)
+{
+	while(!USART_GetFlagStatus(USART1,
+		USART_FLAG_TXE));
+	USART_SendData(USART1, (u8) c);
+
+	/*
+	while(!(USART1->SR & USART_SR_TXE)) {
+		// hmmm....
+	}
 	USART1->DR = c;
+	*/
 }
 
-void usart1_puts(const char *c) {
+void usart1_puts(const char *c)
+{
 	while( (*c) != '\0') {
-		usart1_putchar(*c);
+		usart1_putc(*c);
 		c++;
 	}
 }
 
-static void usart1_init(void) {
+static void usart1_init(void)
+{
 	/** USART1:
 	TX = PA9, RX = PA10
 	**/
+	
+	/* Clock: */
+	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+	
 	/* GPIO: */
 	// TX = PA9 = AltFunc push/pull =
 	//  mode = 11, CNF = 10.
@@ -39,7 +59,7 @@ static void usart1_init(void) {
 	GPIOA->CRH |= GPIO_CRH_CNF10_0;
 	
 	/* USART */
-	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+	
 	
 /* Transmit
 1. Enable the USART by writing
@@ -77,22 +97,30 @@ static void usart1_init(void) {
 	start bit.
 */
 	
+	USART_InitTypeDef USART_param;
+
+	USART_param.USART_BaudRate = 115200;     // 115200
+	USART_param.USART_WordLength = USART_WordLength_8b;
+	USART_param.USART_StopBits = USART_StopBits_1;
+	USART_param.USART_Parity = USART_Parity_No ;
+	USART_param.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	USART_param.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	USART_Init(USART1, &USART_param);
+	USART_Cmd(USART1, ENABLE);
+	
+	
+	#if 0
 	// Enable USART
 	USART1->CR1 |= USART_CR1_UE;
-	
 	// 8bit word len
 	USART1->CR1 &= ~USART_CR1_M;
-	
 	// 1 stop bit = 0b00
 	USART1->CR2 &= ~USART_CR2_STOP;
-
 	// parity = no
 	USART1->CR1 &= ~USART_CR1_PCE;
-
 	// flow ctrl = none
 	USART1->CR3 &= ~(USART_CR3_CTSE
 		| USART_CR3_RTSE);
-
 	// Other things that need to be disabled.
 	USART1->CR2 &= ~(USART_CR2_LINEN
 		| USART_CR2_CLKEN);
@@ -102,14 +130,15 @@ static void usart1_init(void) {
 	// fclk = ABP2 clk = HCLK = 72Mhz = 
 	// 115200               xx xx xx
 	USART1->BRR = USART_BRR(72000000,115200);
-
-	// enable reciever and transmiter.
-	USART1->CR1 |= USART_CR1_TE | USART_CR1_RE;	
+	// enable transmiter. // not yet reciever.
+	USART1->CR1 |= USART_CR1_TE; // | USART_CR1_RE;	
+	
+	#endif
 }
 
+#if 0
 static void usart2_init(void)
 {
-	/** USART2: **/
 	/* REMAP */
 	// TX = PD5 , RX = PD6
 	// CK = PD7, CTS = PD3 , RTS = PD4
@@ -118,14 +147,15 @@ static void usart2_init(void)
 	/* GPIO */
 	// TODO:
 
+	/* CLOCK */
+	RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+
 	/* USART */
-	//RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 	// TODO:
 }
 
 static void usart3_init(void)
 {
-	/** USART3: **/
 	/* REMAP */
 	// TX = PC10, RX = PC11
 	// CK = PC12, CTS = PB13, RTS = PB14
@@ -136,10 +166,13 @@ static void usart3_init(void)
 	/* GPIO */
 	// TODO:
 
+	/* CLOCK */
+	RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+
 	/* USART */
-	//RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
 	// TODO:
 }
+#endif
 
 void usart_init(void)
 {

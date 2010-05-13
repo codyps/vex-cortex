@@ -1,6 +1,59 @@
 /*
-Common part of the linker scripts for STR71x devices in EXT mode
-(that is, the EXT is seen at 0)
+Default linker script for STM32F10x_512K_64K
+Copyright RAISONANCE S.A.S. 2008
+*/
+
+/* include the common STM32F10x sub-script */
+
+/* Common part of the linker scripts for STM32 devices*/
+
+
+/* default stack sizes. 
+
+These are used by the startup in order to allocate stacks for the different modes.
+*/
+
+__Stack_Size = 1024 ;
+
+PROVIDE ( _Stack_Size = __Stack_Size ) ;
+
+__Stack_Init = _estack  - __Stack_Size ;
+
+/*"PROVIDE" allows to easily override these values from an object file or the commmand line.*/
+PROVIDE ( _Stack_Init = __Stack_Init ) ;
+
+/*
+There will be a link error if there is not this amount of RAM free at the end.
+*/
+_Minimum_Stack_Size = 0x100 ;
+
+
+/* include the memory spaces definitions sub-script */
+/*
+Linker subscript for STM32F10x definitions with 512K Flash and 64K RAM */
+
+/* Memory Spaces Definitions */
+
+MEMORY
+{
+  RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 64K
+  FLASH (rx) : ORIGIN = 0x8000000, LENGTH = 384K
+  FLASHB1 (rx) : ORIGIN = 0x00000000, LENGTH = 0
+  EXTMEMB0 (rx) : ORIGIN = 0x00000000, LENGTH = 0
+  EXTMEMB1 (rx) : ORIGIN = 0x00000000, LENGTH = 0
+  EXTMEMB2 (rx) : ORIGIN = 0x00000000, LENGTH = 0
+  EXTMEMB3 (rx) : ORIGIN = 0x00000000, LENGTH = 0
+}
+
+/* higher address of the user mode stack */
+_estack = 0x20010000;
+
+
+
+/* include the sections management sub-script for FLASH mode */
+/*
+Common part of the linker scripts for STR71x devices in FLASH mode
+(that is, the FLASH is seen at 0)
 Copyright RAISONANCE 2005
 You can use, modify and distribute thisfile freely, but without any waranty.
 */
@@ -11,14 +64,30 @@ You can use, modify and distribute thisfile freely, but without any waranty.
 
 SECTIONS
 {
-    /* the program code is stored in the .text section */
+    /* for Cortex devices, the beginning of the startup code is stored in the .isr_vector section, which goes to FLASH */
+    .isr_vector :
+    {
+	. = ALIGN(4);
+        KEEP(*(.isr_vector))            /* Startup code */
+	. = ALIGN(4);
+    } >FLASH
+ 
+    /* for some STRx devices, the beginning of the startup code is stored in the .flashtext section, which goes to FLASH */
+    .flashtext :
+    {
+	. = ALIGN(4);
+        *(.flashtext)            /* Startup code */
+	. = ALIGN(4);
+    } >FLASH
+ 
+    
+    /* the program code is stored in the .text section, which goes to Flash */
     .text :
     {
 	    . = ALIGN(4);
 	    
-        *crt0*.o (.text)            /* Startup code */
-        *startup.o (.text)         /* Startup code */
         *(.text)                   /* remaining code */
+        *(.text.*)                   /* remaining code */
         *(.rodata)                 /* read-only data (constants) */
         *(.rodata*)
         *(.glue_7)
@@ -27,23 +96,24 @@ SECTIONS
 	    . = ALIGN(4);
    	 _etext = .;
 	    /* This is used by the startup in order to initialize the .data secion */
-	    _sidata = _etext ;
-    } >EXTMEMB0
+   	 _sidata = _etext;
+    } >FLASH
     
  
 
     /* This is the initialized data section
     The program executes knowing that the data is in the RAM
-    but the loader puts the initial values in the EXTMEM.
-    It is one task of the startup to copy the initial values from EXTMEMB0 to RAM. */
-    .data  : AT ( _etext )
+    but the loader puts the initial values in the FLASH (inidata).
+    It is one task of the startup to copy the initial values from FLASH to RAM. */
+    .data  : AT ( _sidata )
     {
 	    . = ALIGN(4);
         /* This is used by the startup in order to initialize the .data secion */
         _sdata = . ;
         
         *(.data)
-        
+        *(.data.*)
+
 	    . = ALIGN(4);
 	    /* This is used by the startup in order to initialize the .data secion */
    	 _edata = . ;
@@ -60,10 +130,10 @@ SECTIONS
         
         *(.bss)
         *(COMMON)
+        
 	    . = ALIGN(4);
 	    /* This is used by the startup in order to initialize the .bss secion */
    	 _ebss = . ;
-	    
     } >RAM
     
     PROVIDE ( end = _ebss );
@@ -80,62 +150,64 @@ SECTIONS
         
         . = . + _Minimum_Stack_Size ;
         
-        _eusrstack = ALIGN(4) ;
-	    . = .;
+	    . = ALIGN(4);
+        _eusrstack = . ;
     } >RAM
+    
 
    
-    /* this is the FLASH Bank0 */
-    /* the C or assembly source must explicitly place the code or data there
-    using the "section" attribute */
-    .fb0text :
-    {
-        *(.fb0text)                   /* remaining code */
-        *(.fb0rodata)                 /* read-only data (constants) */
-        *(.fb0rodata*)
-    } >FLASH
-    
     /* this is the FLASH Bank1 */
     /* the C or assembly source must explicitly place the code or data there
     using the "section" attribute */
-    .fb1text :
-    {
-        *(.fb1text)                   /* remaining code */
-        *(.fb1rodata)                 /* read-only data (constants) */
-        *(.fb1rodata*)
-    } >FLASHB1
-    
-    /* EXTMEM Bank1 */
-    .eb1text :
+    .b1text :
     {
         *(.b1text)                   /* remaining code */
         *(.b1rodata)                 /* read-only data (constants) */
         *(.b1rodata*)
+    } >FLASHB1
+    
+    /* this is the EXTMEM */
+    /* the C or assembly source must explicitly place the code or data there
+    using the "section" attribute */
+    
+    /* EXTMEM Bank0 */
+    .eb0text :
+    {
+        *(.eb0text)                   /* remaining code */
+        *(.eb0rodata)                 /* read-only data (constants) */
+        *(.eb0rodata*)
+    } >EXTMEMB0
+    
+    /* EXTMEM Bank1 */
+    .eb1text :
+    {
+        *(.eb1text)                   /* remaining code */
+        *(.eb1rodata)                 /* read-only data (constants) */
+        *(.eb1rodata*)
     } >EXTMEMB1
     
     /* EXTMEM Bank2 */
     .eb2text :
     {
-        *(.b2text)                   /* remaining code */
-        *(.b2rodata)                 /* read-only data (constants) */
-        *(.b2rodata*)
+        *(.eb2text)                   /* remaining code */
+        *(.eb2rodata)                 /* read-only data (constants) */
+        *(.eb2rodata*)
     } >EXTMEMB2
     
     /* EXTMEM Bank0 */
     .eb3text :
     {
-        *(.b3text)                   /* remaining code */
-        *(.b3rodata)                 /* read-only data (constants) */
-        *(.b3rodata*)
+        *(.eb3text)                   /* remaining code */
+        *(.eb3rodata)                 /* read-only data (constants) */
+        *(.eb3rodata*)
     } >EXTMEMB3
     
-    __exidx_start = .;
-    __exidx_end = .;    
+    
     
     /* after that it's only debugging information. */
     
     /* remove the debugging information from the standard libraries */
-    /DISCARD/ :
+    DISCARD :
     {
      libc.a ( * )
      libm.a ( * )
@@ -176,6 +248,3 @@ SECTIONS
     .debug_typenames 0 : { *(.debug_typenames) }
     .debug_varnames  0 : { *(.debug_varnames) }
 }
-
-
-
